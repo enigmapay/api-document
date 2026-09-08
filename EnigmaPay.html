@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnigmaPay REST API Documentation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: {
+                            main: '#0B0D12',
+                            secondary: '#0F1118',
+                            card: '#151821',
+                            cardHover: '#191D28',
+                            cardLight: '#1D2230',
+                        },
+                        accent: {
+                            primary: '#7C5CFF',
+                            secondary: '#7657F6',
+                            light: '#8B6CFF',
+                            glow: 'rgba(124, 92, 255, 0.15)',
+                        },
+                        text: {
+                            primary: '#F5F5F7',
+                            secondary: '#9A9EAA',
+                            muted: '#626675',
+                        },
+                        border: {
+                            subtle: '#292E3B',
+                            light: '#363C4D',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['Fira Code', 'JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & ReactDOM CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #292E3B;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7C5CFF;
+        }
+        .purple-glow {
+            box-shadow: 0 0 25px -5px rgba(124, 92, 255, 0.25);
+        }
+    </style>
+</head>
+<body class="bg-bg-main text-text-primary font-sans antialiased selection:bg-accent-primary selection:text-white min-h-screen">
+
+    <div id="root"></div>
+
+    <script>
+        const e = React.createElement;
+        const { useState, useEffect, useMemo } = React;
+
+        // --- SOURCE OF TRUTH DATA ---
+        const COLLECTION_DATA = {
+            info: {
+                name: "EnigmaPay REST API Documentation",
+                description: "EnigmaPay is a comprehensive payment gateway offering seamless deposit and withdrawal APIs. Our platform automates key financial processes, including deposits via bank transfer and QR codes, with an automatic matching system to ensure fast and efficient processing, delivering a smooth and streamlined experience for businesses and users alike.",
+                version: "1.0.0",
+                baseUrl: "{{endpoint_domain_url}}"
+            },
+            supportedBanks: [
+                { code: "000", shortName: "PROMPTPAY", nameEn: "PROMPTPAY", nameTh: "พร้อมเพย์" },
+                { code: "002", shortName: "BBL", nameEn: "BANGKOK BANK", nameTh: "กรุงเทพ" },
+                { code: "004", shortName: "KBANK", nameEn: "KASIKORNBANK", nameTh: "กสิกรไทย" },
+                { code: "006", shortName: "KTB", nameEn: "KRUNG THAI BANK", nameTh: "กรุงไทย" },
+                { code: "011", shortName: "TMB", nameEn: "TMB BANK", nameTh: "ทหารไทย" },
+                { code: "014", shortName: "SCB", nameEn: "SIAM COMMERCIAL BANK", nameTh: "ไทยพาณิชย์" },
+                { code: "022", shortName: "CIMB", nameEn: "CIMB THAI BANK", nameTh: "ซีไอเอ็มบี" },
+                { code: "024", shortName: "UOB", nameEn: "UNITED OVERSEAS BANK (THAI)", nameTh: "ยูโอบี" },
+                { code: "025", shortName: "BAY", nameEn: "BANK OF AYUDHYA (KRUNGSRI)", nameTh: "กรุงศรี" },
+                { code: "030", shortName: "GSB", nameEn: "THE GOVERNMENT SAVINGS BANK", nameTh: "ออมสิน" },
+                { code: "033", shortName: "GHB", nameEn: "THE GOVERNMENT HOUSING BANK", nameTh: "อาคารสงเคราะห์" },
+                { code: "034", shortName: "BAAC", nameEn: "BANK FOR AGRICULTURE AND AGRICULTURAL COOPERATIVES", nameTh: "ธ.ก.ส." },
+                { code: "067", shortName: "TISCO", nameEn: "TISCO BANK", nameTh: "ทิสโก้" },
+                { code: "069", shortName: "KKP", nameEn: "KIATNAKIN BANK", nameTh: "เกียรตินาคินภัทร" },
+                { code: "071", shortName: "TCRB", nameEn: "THAI CREDIT BANK", nameTh: "ไทยเครดิต" },
+                { code: "073", shortName: "LHBANK", nameEn: "LAND AND HOUSES BANK", nameTh: "แลนด์ แอนด์ เฮ้าส์" },
+                { code: "074", shortName: "TTB", nameEn: "TMBTHANACHART BANK", nameTh: "ทีทีบี" },
+                { code: "ENIGMAPAY", shortName: "ENIGMAPAY", nameEn: "ENIGMAPAY", nameTh: "ENIGMAPAY" }
+            ],
+            folders: [
+                {
+                    id: "utilities",
+                    name: "Utilities",
+                    description: "Utility APIs offer essential tools for accessing key data like bank details, ensuring smooth and efficient operations within the payment system.",
+                    endpoints: [
+                        {
+                            id: "list-banks",
+                            name: "List Bank",
+                            method: "GET",
+                            path: "/api/v1/client/bank/list/code",
+                            description: "Provides a list of all bank information available in our system.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            params: [],
+                            body: null,
+                            responseExample: {
+                                status: "success",
+                                data: [
+                                    { code: "000", name: "PROMPTPAY", name_th: "พร้อมเพย์", name_en: "PROMPTPAY", color: "#1e4598" },
+                                    { code: "002", name: "BBL", name_th: "กรุงเทพ", name_en: "BANGKOK BANK", color: "#1e4598" },
+                                    { code: "004", name: "KBANK", name_th: "กสิกรไทย", name_en: "KASIKORNBANK", color: "#138f2d" }
+                                ]
+                            }
+                        },
+                        {
+                            id: "create-signature",
+                            name: "Create Signature",
+                            method: "POST",
+                            path: "/api/v1/jwt/create",
+                            description: "This is the API to create a signature, similar to the signature creation function mentioned earlier. However, we recommend that you create the signature directly from your code.\n\nNote: Do not forget to use this timestamp value again when making any request with this signature.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            params: [],
+                            bodyParams: [
+                                { field: "secretKey", type: "string", required: "Yes", description: "Your assigned Secret Key", example: "YOUR_SECRET_KEY" },
+                                { field: "timestamp", type: "integer", required: "Yes", description: "Current timestamp in milliseconds", example: "1767000966705" },
+                                { field: "payload.merchantId", type: "string", required: "Yes", description: "Merchant unique ID", example: "YOUR_MERCHANT_ID" },
+                                { field: "payload.clientId", type: "string", required: "Yes", description: "Client unique ID", example: "YOUR_CLIENT_ID" }
+                            ],
+                            bodyExample: {
+                                secretKey: "YOUR_SECRET_KEY",
+                                timestamp: 1767000966705,
+                                payload: {
+                                    merchantId: "YOUR_MERCHANT_ID",
+                                    clientId: "YOUR_CLIENT_ID"
+                                }
+                            },
+                            responseExample: {
+                                status: "success",
+                                signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                                timestamp: 1767000966705
+                            }
+                        },
+                        {
+                            id: "verify-bank-account",
+                            name: "Get Account Name (Disabled)",
+                            method: "POST",
+                            path: "/api/v1/client/bank/verify/bankAccountName",
+                            description: "This POST request is used for verifying transfer transactions. It will return the receiver's bank account name.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            bodyParams: [
+                                { field: "bankAccountNumber", type: "string", required: "Yes", description: "Target Bank Account Number", example: "1234567890" },
+                                { field: "bankName", type: "string", required: "Yes", description: "Bank Short Name (from Bank List)", example: "SCB" }
+                            ],
+                            bodyExample: {
+                                bankAccountNumber: "1234567890",
+                                bankName: "SCB"
+                            },
+                            responseExample: {
+                                status: "success",
+                                data: "นาย เฮง ร่ำรวย"
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: "deposit",
+                    name: "Deposit",
+                    description: "Our Deposit API supports two types of deposits: QR and CRYPTO (and TRANSFER mode matching). We require the customer's bank account details to ensure accurate and seamless transaction matching, enabling a fast and efficient payment process.",
+                    endpoints: [
+                        {
+                            id: "create-deposit",
+                            name: "Create Deposit",
+                            method: "POST",
+                            path: "/api/v1/deposit/create",
+                            description: "Creates a deposit request. Returns an iframe URL (iframeSrc) or QR details for processing payments.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            bodyParams: [
+                                { field: "clientId", type: "string", required: "Yes", description: "The client's unique identifier", example: "YOUR_CLIENT_ID" },
+                                { field: "merchantId", type: "string", required: "Yes", description: "The merchant's unique identifier", example: "YOUR_MERCHANT_ID" },
+                                { field: "transactionId", type: "string", required: "Yes", description: "Unique transaction ID created by the client", example: "ENG0PTB014467231" },
+                                { field: "bankAccountNumber", type: "string", required: "Yes", description: "The bank account number for the transaction", example: "3140371234" },
+                                { field: "bankName", type: "string", required: "Yes", description: "The name of the bank (from List Bank API)", example: "KTB" },
+                                { field: "amount", type: "number", required: "Conditional", description: "Required if type is QR/CRYPTO, not required if type is TRANSFER", example: "200" },
+                                { field: "type", type: "string", required: "Yes", description: "Transaction type: QR or CRYPTO", example: "QR" },
+                                { field: "callbackUrl", type: "string", required: "Yes", description: "Webhook notification URL (Must be HTTPS)", example: "https://xxx.xxx/callback" },
+                                { field: "timeout", type: "integer", required: "Yes", description: "Minutes before expiration (e.g. 5 or 10)", example: "10" },
+                                { field: "signature", type: "string", required: "Yes", description: "JWT signature generated via HS256", example: "eyJhbGciOiJIUzI1Ni..." },
+                                { field: "timestamp", type: "integer", required: "Yes", description: "Must match the timestamp used in signature", example: "1767000966705" },
+                                { field: "name", type: "string", required: "No", description: "Customer Name", example: "Jonny Doe" },
+                                { field: "phone", type: "string", required: "No", description: "Customer Phone Number", example: "0812345678" }
+                            ],
+                            bodyExample: {
+                                clientId: "YOUR_CLIENT_ID",
+                                merchantId: "YOUR_MERCHANT_ID",
+                                transactionId: "ENG0PTB01776723e7X1",
+                                bankAccountNumber: "3140312345",
+                                bankName: "BBL",
+                                name: "Jonny Doe",
+                                amount: 200,
+                                callbackUrl: "https://yourdomain.com/callback",
+                                type: "QR",
+                                timeout: 10,
+                                signature: "YOUR_GENERATED_SIGNATURE",
+                                timestamp: 1767000966705
+                            },
+                            responseExample: {
+                                status: "success",
+                                message: "Create Success",
+                                data: {
+                                    clientId: "YOUR_CLIENT_ID",
+                                    merchantId: "YOUR_MERCHANT_ID",
+                                    referenceId: "w5EIFM4i1M",
+                                    transactionId: "ENG0PTB01776723e7X1",
+                                    status: "pending",
+                                    amount: 200,
+                                    depositAmount: 199.54,
+                                    iframeSrc: "https://payment.paygateth.com?token=eyJhbGci...&noOverlay=true",
+                                    bankAccountNumber: "1714436599",
+                                    bankAccountName: "EnigmaPay System Account",
+                                    bankName: "SCB",
+                                    bankCode: "014",
+                                    expireDate: "2026-10-07T17:30:34.581Z"
+                                }
+                            }
+                        },
+                        {
+                            id: "list-deposits",
+                            name: "List Deposit Transactions",
+                            method: "GET",
+                            path: "/api/v1/deposit",
+                            description: "Retrieves a list of deposit transactions based on date range and merchant ID.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            params: [
+                                { field: "startDate", type: "string", required: "Yes", description: "Start date in YYYY-MM-DD", example: "2026-10-01" },
+                                { field: "endDate", type: "string", required: "Yes", description: "End date in YYYY-MM-DD", example: "2026-10-07" },
+                                { field: "merchantId", type: "string", required: "Yes", description: "Merchant Unique Identifier", example: "YOUR_MERCHANT_ID" },
+                                { field: "pageSize", type: "integer", required: "No", description: "Records per page (default 20)", example: "20" },
+                                { field: "pageIndex", type: "integer", required: "No", description: "Page number for pagination", example: "1" }
+                            ],
+                            responseExample: {
+                                status: "success",
+                                data: [
+                                    {
+                                        referenceId: "w5EIFM4i1M",
+                                        transactionId: "ENG0PTB01776723e7X1",
+                                        amount: 200,
+                                        depositAmount: 199.54,
+                                        status: "completed",
+                                        type: "QR",
+                                        createdAt: "2026-10-07T17:25:34.776Z"
+                                    }
+                                ],
+                                total: 1
+                            }
+                        },
+                        {
+                            id: "get-deposit-by-ref",
+                            name: "Get Deposit Transaction By Ref ID",
+                            method: "GET",
+                            path: "/api/v1/deposit/:referenceId",
+                            description: "Retrieves the details of a specific deposit transaction using the reference ID.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            params: [
+                                { field: "referenceId", type: "string", required: "Yes", description: "Path parameter: Reference ID returned upon creation", example: "w5EIFM4i1M" }
+                            ],
+                            responseExample: {
+                                status: "success",
+                                data: {
+                                    referenceId: "w5EIFM4i1M",
+                                    transactionId: "ENG0PTB01776723e7X1",
+                                    amount: 200,
+                                    depositAmount: 199.54,
+                                    status: "completed",
+                                    bankName: "BBL",
+                                    createdAt: "2026-10-07T17:25:34.776Z"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: "payout",
+                    name: "Payout",
+                    description: "Our Payout API processes outbound disbursements directly into user bank accounts.",
+                    endpoints: [
+                        {
+                            id: "create-payout",
+                            name: "Create Payout",
+                            method: "POST",
+                            path: "/api/v1/payout/create",
+                            description: "Initiates an automated payout request to the target bank account.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            bodyParams: [
+                                { field: "clientId", type: "string", required: "Yes", description: "The unique identifier for the client", example: "YOUR_CLIENT_ID" },
+                                { field: "merchantId", type: "string", required: "Yes", description: "The unique identifier for the merchant", example: "YOUR_MERCHANT_ID" },
+                                { field: "transactionId", type: "string", required: "Yes", description: "Client-generated transaction ID", example: "POP0PTB01776723e7X1" },
+                                { field: "bankAccountNumber", type: "string", required: "Yes", description: "Customer bank account number", example: "6640193604" },
+                                { field: "amount", type: "number", required: "Yes", description: "Payout amount", example: "50.00" },
+                                { field: "bankName", type: "string", required: "Yes", description: "Bank Short Name (from List Bank API)", example: "KTB" },
+                                { field: "callbackUrl", type: "string", required: "Yes", description: "HTTPS callback URL for payout notifications", example: "https://xxxx.com/callback" },
+                                { field: "signature", type: "string", required: "Yes", description: "Generated JWT signature", example: "eyJhbGciOi..." },
+                                { field: "timestamp", type: "integer", required: "Yes", description: "Timestamp matching signature", example: "1767000966705" },
+                                { field: "name", type: "string", required: "No", description: "Customer/Account Holder Name", example: "John Doe" }
+                            ],
+                            bodyExample: {
+                                clientId: "YOUR_CLIENT_ID",
+                                merchantId: "YOUR_MERCHANT_ID",
+                                transactionId: "POP0PTB01776723e7X1",
+                                bankAccountNumber: "6640193604",
+                                amount: 50.00,
+                                bankName: "KTB",
+                                callbackUrl: "https://yourdomain.com/callback",
+                                signature: "YOUR_GENERATED_SIGNATURE",
+                                timestamp: 1767000966705,
+                                name: "John Doe"
+                            },
+                            responseExample: {
+                                status: "success",
+                                message: "Create Success",
+                                data: {
+                                    clientId: "YOUR_CLIENT_ID",
+                                    merchantId: "YOUR_MERCHANT_ID",
+                                    referenceId: "qS4EDxSWCO",
+                                    transactionId: "POP0PTB01776723e7X1",
+                                    amount: 50.00,
+                                    status: "pending"
+                                }
+                            }
+                        },
+                        {
+                            id: "list-payouts",
+                            name: "List Payout Transactions",
+                            method: "GET",
+                            path: "/api/v1/payout",
+                            description: "Retrieves a paginated list of payout transactions.",
+                            headers: [{ key: "x-api-key", value: "YOUR_API_KEY", required: true, description: "Merchant API Key" }],
+                            params: [
+                                { field: "startDate", type: "string", required: "Yes", description: "Start date YYYY-MM-DD", example: "2026-10-07" },
+                                { field: "endDate", type: "string", required: "Yes", description: "End date YYYY-MM-DD", example: "2026-10-08" },
+                                { field: "merchantId", type: "string", required: "Yes", description: "Merchant Unique Identifier", example: "YOUR_MERCHANT_ID" },
+                                { field: "pageSize", type: "integer", required: "No", description: "Number of records per page", example: "20" },
+                                { field: "pageIndex", type: "integer", required: "No", description: "Page index number", example: "1" }
+                            ],
+                            responseExample: {
+                                status: "success",
+                                data: [
+                                    {
+                                        referenceId: "qS4EDxSWCO",
+                                        transactionId: "POP0PTB01776723e7X1",
+                                        amount: 50.00,
+                                        status: "completed",
+                                        bankName: "KTB",
+                                        createdAt: "2026-10-07T20:10:15.309Z"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    id: "webhooks",
+                    name: "Webhooks",
+                    description: "EnigmaPay sends HTTP POST callbacks to your specified callbackUrl when transactions change state to completed or expired.",
+                    endpoints: [
+                        {
+                            id: "webhook-deposit-qr",
+                            name: "Deposit Webhook Callback [ QR ]",
+                            method: "POST",
+                            path: "YOUR_CALLBACK_URL",
+                            description: "Triggered automatically when a QR deposit reaches completed or expired status.",
+                            headers: [],
+                            bodyExample: {
+                                referenceId: "w5EIFM4i1M",
+                                transactionId: "ENG0PTB01776723e7X1",
+                                clientId: "YOUR_CLIENT_ID",
+                                merchantId: "YOUR_MERCHANT_ID",
+                                bankCode: "074",
+                                bankName: "TTB",
+                                bankAccountNumber: "62xxxxxx40",
+                                amount: 400.64,
+                                status: "completed",
+                                timestamp: 1728329638,
+                                matchTimestamp: 1728329640826,
+                                type: "QR",
+                                hash: "U2FsdGVkX1/Z6EHf3XX6hmzlnK7TvYoLKsUlyR0F47LIERkRq2fKKhKwpwq3j9wu"
+                            },
+                            responseExample: {
+                                webhookResponse: "success"
+                            }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // --- CODE GENERATOR HELPERS ---
+        function generateCodeExample(language, endpoint) {
+            const url = `{{endpoint_domain_url}}${endpoint.path}`;
+            const method = endpoint.method;
+            const headers = (endpoint.headers || []).map(h => `  "${h.key}": "${h.value}"`).join(",\n");
+            const bodyStr = endpoint.bodyExample ? JSON.stringify(endpoint.bodyExample, null, 2) : null;
+
+            if (language === 'curl') {
+                let curl = `curl -X ${method} "${url}" \\\n`;
+                if (endpoint.headers) {
+                    endpoint.headers.forEach(h => {
+                        curl += `  -H "${h.key}: ${h.value}" \\\n`;
+                    });
+                }
+                if (bodyStr) {
+                    curl += `  -H "Content-Type: application/json" \\\n`;
+                    curl += `  -d '${JSON.stringify(endpoint.bodyExample)}'`;
+                }
+                return curl.trim();
+            }
+
+            if (language === 'javascript') {
+                return `const fetch = require('node-fetch');
+
+async function runRequest() {
+  const response = await fetch("${url}", {
+    method: "${method}",
+    headers: {
+      "Content-Type": "application/json",
+${headers}
+    }${bodyStr ? `,\n    body: JSON.stringify(${bodyStr})` : ''}
+  });
+
+  const data = await response.json();
+  console.log(data);
+}
+
+runRequest();`;
+            }
+
+            if (language === 'python') {
+                return `import requests
+import json
+
+url = "${url}"
+headers = {
+    "Content-Type": "application/json",
+${(endpoint.headers || []).map(h => `    "${h.key}": "${h.value}"`).join(",\n")}
+}
+${bodyStr ? `payload = ${bodyStr.replace(/true/g, 'True').replace(/false/g, 'False')}\n\nresponse = requests.${method.toLowerCase()}(url, headers=headers, data=json.dumps(payload))` : `response = requests.${method.toLowerCase()}(url, headers=headers)`}
+
+print(response.status_code)
+print(response.json())`;
+            }
+
+            if (language === 'php') {
+                return `<?php
+$ch = curl_init();
+
+curl_setopt($ch, CURLOPT_URL, "${url}");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "${method}");
+${bodyStr ? `curl_setopt($ch, CURLOPT_POSTFIELDS, '${JSON.stringify(endpoint.bodyExample)}');\n` : ''}
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+  "Content-Type: application/json",
+${(endpoint.headers || []).map(h => `  "${h.key}: ${h.value}"`).join(",\n")}
+));
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+var_dump(json_decode($response, true));
+?>`;
+            }
+
+            return '';
+        }
+
+        // --- COMPONENTS ---
+
+        const MethodBadge = ({ method }) => {
+            const colors = {
+                GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+                POST: 'bg-accent-primary/10 text-accent-light border-accent-primary/30',
+                PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+                DELETE: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+            };
+            return e('span', {
+                className: `px-2.5 py-1 text-xs font-mono font-semibold rounded border ${colors[method] || 'bg-gray-500/10 text-gray-400'}`
+            }, method);
+        };
+
+        const CodeBlock = ({ code, language = 'json' }) => {
+            const [copied, setCopied] = useState(false);
+
+            const handleCopy = () => {
+                navigator.clipboard.writeText(typeof code === 'object' ? JSON.stringify(code, null, 2) : code);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            const displayCode = typeof code === 'object' ? JSON.stringify(code, null, 2) : code;
+
+            return e('div', { className: "relative group rounded-xl bg-bg-card border border-border-subtle overflow-hidden my-3" },
+                e('div', { className: "flex items-center justify-between px-4 py-2 bg-bg-secondary border-b border-border-subtle text-xs text-text-muted font-mono" },
+                    e('span', null, language.toUpperCase()),
+                    e('button', {
+                        onClick: handleCopy,
+                        className: "flex items-center gap-1.5 px-2.5 py-1 rounded bg-bg-cardLight hover:bg-border-subtle text-text-secondary hover:text-text-primary transition-all"
+                    }, e('span', null, copied ? 'Copied' : 'Copy'))
+                ),
+                e('pre', { className: "p-4 text-xs font-mono text-text-primary overflow-x-auto leading-relaxed" },
+                    e('code', null, displayCode)
+                )
+            );
+        };
+
+        const Header = ({ searchQuery, setSearchQuery }) => {
+            return e('header', { className: "sticky top-0 z-40 bg-bg-main/80 backdrop-blur-md border-b border-border-subtle px-6 py-3.5 flex items-center justify-between" },
+                e('div', { className: "flex items-center gap-3" },
+                    e('div', { className: "w-8 h-8 rounded-lg bg-accent-primary/20 border border-accent-primary/40 flex items-center justify-center font-bold text-accent-light text-lg purple-glow" }, "E"),
+                    e('span', { className: "font-bold text-text-primary text-base tracking-wide" },
+                        "EnigmaPay ",
+                        e('span', { className: "text-xs px-2 py-0.5 rounded bg-accent-primary/10 text-accent-light border border-accent-primary/30 font-normal ml-1" }, "v1.0")
+                    )
+                ),
+                e('div', { className: "relative w-full max-w-md hidden sm:block" },
+                    e('input', {
+                        type: "text",
+                        placeholder: "Search endpoints...",
+                        value: searchQuery,
+                        onChange: (e) => setSearchQuery(e.target.value),
+                        className: "w-full bg-bg-secondary border border-border-subtle rounded-lg px-4 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-primary transition-all"
+                    })
+                ),
+                e('div', { className: "flex items-center gap-3 text-xs" },
+                    e('span', { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium" },
+                        e('span', { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }),
+                        "API Operational"
+                    )
+                )
+            );
+        };
+
+        const Sidebar = ({ activeTab, setActiveTab, folders }) => {
+            return e('aside', { className: "w-64 border-r border-border-subtle bg-bg-secondary/50 flex flex-col shrink-0 h-[calc(100vh-57px)] sticky top-[57px] overflow-y-auto p-4" },
+                e('nav', { className: "space-y-6 text-xs" },
+                    e('div', null,
+                        e('div', { className: "px-2 mb-2 text-[10px] uppercase font-bold text-text-muted tracking-wider" }, "Getting Started"),
+                        e('div', { className: "space-y-1" },
+                            e('button', {
+                                onClick: () => setActiveTab('overview'),
+                                className: `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'overview' ? 'bg-accent-primary/15 text-accent-light border border-accent-primary/30' : 'text-text-secondary hover:text-text-primary hover:bg-bg-card'}`
+                            }, "Overview"),
+                            e('button', {
+                                onClick: () => setActiveTab('auth'),
+                                className: `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'auth' ? 'bg-accent-primary/15 text-accent-light border border-accent-primary/30' : 'text-text-secondary hover:text-text-primary hover:bg-bg-card'}`
+                            }, "Authentication & Signature"),
+                            e('button', {
+                                onClick: () => setActiveTab('banks'),
+                                className: `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'banks' ? 'bg-accent-primary/15 text-accent-light border border-accent-primary/30' : 'text-text-secondary hover:text-text-primary hover:bg-bg-card'}`
+                            }, "Supported Banks List")
+                        )
+                    ),
+                    e('div', null,
+                        e('div', { className: "px-2 mb-2 text-[10px] uppercase font-bold text-text-muted tracking-wider" }, "API Reference"),
+                        e('div', { className: "space-y-4" },
+                            folders.map(folder => e('div', { key: folder.id, className: "space-y-1" },
+                                e('div', { className: "px-3 py-1 font-semibold text-text-primary" }, folder.name),
+                                e('div', { className: "pl-3 space-y-0.5 border-l border-border-subtle ml-4" },
+                                    folder.endpoints.map(ep => e('button', {
+                                        key: ep.id,
+                                        onClick: () => setActiveTab(ep.id),
+                                        className: `w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-[11px] transition-all ${activeTab === ep.id ? 'bg-accent-primary/15 text-accent-light font-medium' : 'text-text-secondary hover:text-text-primary hover:bg-bg-card'}`
+                                    },
+                                        e('span', { className: "truncate" }, ep.name),
+                                        e('span', { className: "text-[9px] font-mono opacity-80" }, ep.method)
+                                    ))
+                                )
+                            ))
+                        )
+                    ),
+                    e('div', null,
+                        e('div', { className: "px-2 mb-2 text-[10px] uppercase font-bold text-text-muted tracking-wider" }, "Tools"),
+                        e('button', {
+                            onClick: () => setActiveTab('explorer'),
+                            className: `w-full flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === 'explorer' ? 'bg-accent-primary/15 text-accent-light border border-accent-primary/30' : 'text-text-secondary hover:text-text-primary hover:bg-bg-card'}`
+                        }, "Interactive API Explorer")
+                    )
+                )
+            );
+        };
+
+        const BankListTable = ({ banks }) => {
+            return e('div', { className: "space-y-4" },
+                e('h2', { className: "text-xl font-bold text-text-primary" }, "Supported Banks Directory"),
+                e('p', { className: "text-xs text-text-secondary" },
+                    "Use the ", e('code', { className: "text-accent-light font-mono" }, "shortName"), " column value for the ", e('code', { className: "text-accent-light font-mono" }, "bankName"), " parameter in deposit and payout requests."
+                ),
+                e('div', { className: "rounded-xl border border-border-subtle bg-bg-card overflow-hidden" },
+                    e('table', { className: "w-full text-left text-xs" },
+                        e('thead', { className: "bg-bg-secondary border-b border-border-subtle text-text-muted font-mono" },
+                            e('tr', null,
+                                e('th', { className: "p-3" }, "Bank Code"),
+                                e('th', { className: "p-3" }, "Short Name"),
+                                e('th', { className: "p-3" }, "English Name"),
+                                e('th', { className: "p-3" }, "Thai Name")
+                            )
+                        ),
+                        e('tbody', { className: "divide-y divide-border-subtle" },
+                            banks.map(bank => e('tr', { key: bank.code, className: "hover:bg-bg-cardHover/50 transition-colors" },
+                                e('td', { className: "p-3 font-mono text-accent-light" }, bank.code),
+                                e('td', { className: "p-3 font-semibold text-text-primary" }, bank.shortName),
+                                e('td', { className: "p-3 text-text-secondary" }, bank.nameEn),
+                                e('td', { className: "p-3 text-text-secondary" }, bank.nameTh)
+                            ))
+                        )
+                    )
+                )
+            );
+        };
+
+        const AuthDoc = () => {
+            return e('div', { className: "space-y-6 max-w-4xl" },
+                e('div', null,
+                    e('h1', { className: "text-2xl font-bold text-text-primary mb-2" }, "Authentication & JWT Signature"),
+                    e('p', { className: "text-xs text-text-secondary leading-relaxed" },
+                        "EnigmaPay uses a dual-layer security model: an ",
+                        e('code', { className: "text-accent-light font-mono" }, "x-api-key"),
+                        " request header combined with a single-use JWT signature generated via ",
+                        e('code', { className: "text-accent-light font-mono" }, "HS256"),
+                        " encryption."
+                    )
+                ),
+                e('div', { className: "p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed" },
+                    e('strong', { className: "font-bold" }, "Security Notice: "),
+                    "Single-use Signatures. Each generated signature uses a millisecond timestamp and is valid for a single request only. Never re-use signatures across multiple requests."
+                ),
+                e('div', { className: "space-y-4" },
+                    e('h2', { className: "text-lg font-semibold text-text-primary" }, "Signature Payload Structure"),
+                    e(CodeBlock, {
+                        language: "json",
+                        code: {
+                            merchantId: "YOUR_MERCHANT_ID",
+                            clientId: "YOUR_CLIENT_ID",
+                            iat: 1767000966705
+                        }
+                    })
+                ),
+                e('div', { className: "space-y-4" },
+                    e('h2', { className: "text-lg font-semibold text-text-primary" }, "Code Implementation Examples"),
+                    e('div', { className: "space-y-3" },
+                        e('h3', { className: "text-xs font-semibold text-accent-light uppercase tracking-wider" }, "Node.js (JavaScript)"),
+                        e(CodeBlock, {
+                            language: "javascript",
+                            code: `const jwt = require("jsonwebtoken");
+const SECRET_KEY = "YOUR_SECRET_KEY";
+const TIMESTAMP = Date.now();
+
+const PAYLOAD = {
+  "merchantId": "YOUR_MERCHANT_ID", 
+  "clientId": "YOUR_CLIENT_ID", 
+  "iat": TIMESTAMP
+};
+
+const signature = jwt.sign(PAYLOAD, SECRET_KEY);`
+                        })
+                    )
+                )
+            );
+        };
+
+        const EndpointDoc = ({ endpoint }) => {
+            const [activeLang, setActiveLang] = useState('curl');
+
+            return e('div', { className: "space-y-8" },
+                e('div', { className: "space-y-3 pb-6 border-b border-border-subtle" },
+                    e('div', { className: "flex items-center gap-3" },
+                        e(MethodBadge, { method: endpoint.method }),
+                        e('h1', { className: "text-2xl font-bold text-text-primary" }, endpoint.name)
+                    ),
+                    e('div', { className: "p-3 rounded-lg bg-bg-card border border-border-subtle font-mono text-xs text-accent-light flex items-center justify-between" },
+                        e('span', null, `{{endpoint_domain_url}}${endpoint.path}`),
+                        e('span', { className: "text-[10px] text-text-muted uppercase" }, "HTTPS")
+                    ),
+                    e('p', { className: "text-xs text-text-secondary leading-relaxed whitespace-pre-line" }, endpoint.description)
+                ),
+                e('div', { className: "grid grid-cols-1 lg:grid-cols-12 gap-8" },
+                    e('div', { className: "lg:col-span-7 space-y-6" },
+                        endpoint.headers && endpoint.headers.length > 0 && e('div', { className: "space-y-3" },
+                            e('h3', { className: "text-sm font-bold text-text-primary" }, "Request Headers"),
+                            e('div', { className: "rounded-lg border border-border-subtle overflow-hidden" },
+                                e('table', { className: "w-full text-left text-xs" },
+                                    e('thead', { className: "bg-bg-secondary border-b border-border-subtle text-text-muted font-mono" },
+                                        e('tr', null,
+                                            e('th', { className: "p-2.5" }, "Header"),
+                                            e('th', { className: "p-2.5" }, "Value Example"),
+                                            e('th', { className: "p-2.5" }, "Description")
+                                        )
+                                    ),
+                                    e('tbody', { className: "divide-y divide-border-subtle" },
+                                        endpoint.headers.map(h => e('tr', { key: h.key },
+                                            e('td', { className: "p-2.5 font-mono text-accent-light" }, h.key),
+                                            e('td', { className: "p-2.5 font-mono text-text-secondary" }, h.value),
+                                            e('td', { className: "p-2.5 text-text-muted" }, h.description)
+                                        ))
+                                    )
+                                )
+                            )
+                        ),
+                        endpoint.bodyParams && endpoint.bodyParams.length > 0 && e('div', { className: "space-y-3" },
+                            e('h3', { className: "text-sm font-bold text-text-primary" }, "Request Body Schema"),
+                            e('div', { className: "rounded-lg border border-border-subtle overflow-hidden" },
+                                e('table', { className: "w-full text-left text-xs" },
+                                    e('thead', { className: "bg-bg-secondary border-b border-border-subtle text-text-muted font-mono" },
+                                        e('tr', null,
+                                            e('th', { className: "p-2.5" }, "Field"),
+                                            e('th', { className: "p-2.5" }, "Type"),
+                                            e('th', { className: "p-2.5" }, "Required"),
+                                            e('th', { className: "p-2.5" }, "Description")
+                                        )
+                                    ),
+                                    e('tbody', { className: "divide-y divide-border-subtle" },
+                                        endpoint.bodyParams.map(p => e('tr', { key: p.field },
+                                            e('td', { className: "p-2.5 font-mono text-accent-light" }, p.field),
+                                            e('td', { className: "p-2.5 font-mono text-text-muted" }, p.type),
+                                            e('td', { className: "p-2.5" },
+                                                e('span', { className: `px-1.5 py-0.5 rounded text-[10px] ${p.required === 'Yes' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'}` }, p.required)
+                                            ),
+                                            e('td', { className: "p-2.5 text-text-secondary" }, p.description)
+                                        ))
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    e('div', { className: "lg:col-span-5 space-y-4" },
+                        e('div', { className: "rounded-xl border border-border-subtle bg-bg-card p-4 space-y-3" },
+                            e('div', { className: "flex items-center justify-between border-b border-border-subtle pb-2" },
+                                e('span', { className: "text-xs font-bold text-text-primary" }, "Request Code Example"),
+                                e('div', { className: "flex gap-1" },
+                                    ['curl', 'javascript', 'python', 'php'].map(lang => e('button', {
+                                        key: lang,
+                                        onClick: () => setActiveLang(lang),
+                                        className: `px-2 py-0.5 rounded text-[10px] font-mono transition-all ${activeLang === lang ? 'bg-accent-primary text-white font-semibold' : 'text-text-muted hover:text-text-primary'}`
+                                    }, lang))
+                                )
+                            ),
+                            e(CodeBlock, { code: generateCodeExample(activeLang, endpoint), language: activeLang })
+                        ),
+                        endpoint.responseExample && e('div', { className: "rounded-xl border border-border-subtle bg-bg-card p-4 space-y-3" },
+                            e('div', { className: "flex items-center justify-between" },
+                                e('span', { className: "text-xs font-bold text-text-primary" }, "200 OK Response Example"),
+                                e('span', { className: "px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono" }, "200 SUCCESS")
+                            ),
+                            e(CodeBlock, { code: endpoint.responseExample, language: "json" })
+                        )
+                    )
+                )
+            );
+        };
+
+        const ApiExplorer = ({ folders }) => {
+            const allEndpoints = useMemo(() => folders.flatMap(f => f.endpoints), [folders]);
+            const [selectedEpId, setSelectedEpId] = useState(allEndpoints[0]?.id || '');
+            const selectedEp = allEndpoints.find(e => e.id === selectedEpId);
+            const [apiKey, setApiKey] = useState('YOUR_DEMO_API_KEY');
+            const [bodyInput, setBodyInput] = useState('');
+            const [mockResponse, setMockResponse] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                if (selectedEp && selectedEp.bodyExample) {
+                    setBodyInput(JSON.stringify(selectedEp.bodyExample, null, 2));
+                } else {
+                    setBodyInput('');
+                }
+                setMockResponse(null);
+            }, [selectedEpId]);
+
+            const handleExecute = () => {
+                setLoading(true);
+                setTimeout(() => {
+                    setMockResponse({
+                        status: "200 OK (Mock Sandbox Mode)",
+                        timestamp: new Date().toISOString(),
+                        executedEndpoint: selectedEp?.path,
+                        data: selectedEp?.responseExample || { message: "Success" }
+                    });
+                    setLoading(false);
+                }, 400);
+            };
+
+            return e('div', { className: "space-y-6 max-w-4xl" },
+                e('div', null,
+                    e('h1', { className: "text-2xl font-bold text-text-primary mb-1" }, "Interactive API Explorer"),
+                    e('p', { className: "text-xs text-text-secondary" }, "Test request structures directly inside a safe client-side sandbox environment.")
+                ),
+                e('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+                    e('div', { className: "space-y-4 bg-bg-card p-5 rounded-xl border border-border-subtle" },
+                        e('div', null,
+                            e('label', { className: "block text-xs font-semibold text-text-muted mb-1" }, "Select Endpoint"),
+                            e('select', {
+                                value: selectedEpId,
+                                onChange: (e) => setSelectedEpId(e.target.value),
+                                className: "w-full bg-bg-secondary border border-border-subtle rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary"
+                            },
+                                allEndpoints.map(ep => e('option', { key: ep.id, value: ep.id }, `[${ep.method}] ${ep.name}`))
+                            )
+                        ),
+                        e('div', null,
+                            e('label', { className: "block text-xs font-semibold text-text-muted mb-1" }, "x-api-key Header"),
+                            e('input', {
+                                type: "text",
+                                value: apiKey,
+                                onChange: (e) => setApiKey(e.target.value),
+                                className: "w-full bg-bg-secondary border border-border-subtle rounded-lg p-2 text-xs text-text-primary font-mono"
+                            })
+                        ),
+                        selectedEp?.bodyExample && e('div', null,
+                            e('label', { className: "block text-xs font-semibold text-text-muted mb-1" }, "JSON Request Body"),
+                            e('textarea', {
+                                rows: "8",
+                                value: bodyInput,
+                                onChange: (e) => setBodyInput(e.target.value),
+                                className: "w-full bg-bg-secondary border border-border-subtle rounded-lg p-2 text-xs font-mono text-text-primary focus:outline-none focus:border-accent-primary"
+                            })
+                        ),
+                        e('button', {
+                            onClick: handleExecute,
+                            disabled: loading,
+                            className: "w-full py-2.5 rounded-lg bg-accent-primary hover:bg-accent-secondary text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 purple-glow"
+                        }, loading ? 'Processing...' : 'Send Test Request')
+                    ),
+                    e('div', { className: "space-y-4" },
+                        e('h3', { className: "text-xs font-bold text-text-primary uppercase tracking-wider" }, "Simulated Response Output"),
+                        mockResponse ? e(CodeBlock, { code: mockResponse, language: "json" }) : e('div', { className: "h-64 rounded-xl border border-dashed border-border-subtle flex items-center justify-center text-xs text-text-muted text-center p-6" }, 'Click "Send Test Request" to execute the mock request payload.')
+                    )
+                )
+            );
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [searchQuery, setSearchQuery] = useState('');
+
+            const currentEndpoint = useMemo(() => {
+                for (const folder of COLLECTION_DATA.folders) {
+                    const found = folder.endpoints.find(e => e.id === activeTab);
+                    if (found) return found;
+                }
+                return null;
+            }, [activeTab]);
+
+            return e('div', { className: "min-h-screen bg-bg-main flex flex-col" },
+                e(Header, { searchQuery, setSearchQuery }),
+                e('div', { className: "flex flex-1" },
+                    e(Sidebar, {
+                        activeTab,
+                        setActiveTab,
+                        folders: COLLECTION_DATA.folders
+                    }),
+                    e('main', { className: "flex-1 p-8 overflow-y-auto" },
+                        activeTab === 'overview' && e('div', { className: "space-y-6 max-w-4xl" },
+                            e('h1', { className: "text-3xl font-bold text-text-primary" }, COLLECTION_DATA.info.name),
+                            e('p', { className: "text-xs text-text-secondary leading-relaxed border-l-2 border-accent-primary pl-4 py-1" }, COLLECTION_DATA.info.description),
+                            e('div', { className: "grid grid-cols-1 sm:grid-cols-3 gap-4 my-6" },
+                                e('div', { className: "p-4 rounded-xl bg-bg-card border border-border-subtle space-y-1" },
+                                    e('div', { className: "text-[10px] text-text-muted font-bold uppercase" }, "Gateway Base URL"),
+                                    e('div', { className: "text-xs font-mono text-accent-light" }, "{{endpoint_domain_url}}")
+                                ),
+                                e('div', { className: "p-4 rounded-xl bg-bg-card border border-border-subtle space-y-1" },
+                                    e('div', { className: "text-[10px] text-text-muted font-bold uppercase" }, "Authentication"),
+                                    e('div', { className: "text-xs font-mono text-text-primary" }, "x-api-key + JWT Signature")
+                                ),
+                                e('div', { className: "p-4 rounded-xl bg-bg-card border border-border-subtle space-y-1" },
+                                    e('div', { className: "text-[10px] text-text-muted font-bold uppercase" }, "Supported Channels"),
+                                    e('div', { className: "text-xs font-mono text-emerald-400" }, "QR, CRYPTO, TRANSFER")
+                                )
+                            ),
+                            e('h2', { className: "text-lg font-semibold text-text-primary" }, "Quick Integration Workflow"),
+                            e('ol', { className: "list-decimal list-inside text-xs text-text-secondary space-y-2 leading-relaxed" },
+                                e('li', null, "Generate an HMAC-SHA256 (HS256) signature with your Merchant ID, Client ID, and Timestamp."),
+                                e('li', null, "Include your assigned ", e('code', { className: "text-accent-light font-mono" }, "x-api-key"), " in every HTTP header."),
+                                e('li', null, "Call ", e('code', { className: "text-accent-light font-mono" }, "/api/v1/deposit/create"), " or ", e('code', { className: "text-accent-light font-mono" }, "/api/v1/payout/create"), " to initiate transactions."),
+                                e('li', null, "Listen for automated webhook callbacks sent to your HTTPS callback URL upon completion.")
+                            )
+                        ),
+                        activeTab === 'auth' && e(AuthDoc),
+                        activeTab === 'banks' && e(BankListTable, { banks: COLLECTION_DATA.supportedBanks }),
+                        activeTab === 'explorer' && e(ApiExplorer, { folders: COLLECTION_DATA.folders }),
+                        currentEndpoint && e(EndpointDoc, { endpoint: currentEndpoint })
+                    )
+                )
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(e(App));
+    </script>
+</body>
+</html>

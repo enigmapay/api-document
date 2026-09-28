@@ -196,6 +196,7 @@
                 { field: "bankAccountNumber", type: "string", req: true, desc: "Customer bank account number", ex: "{{uniqueBankNumber}}" },
                 { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "{{bankname}}" },
                 { field: "name", type: "string", req: true, desc: "Customer name", ex: "{{uniqueName}}" },
+                { field: "amount", type: "float/integer", req: true, desc: "The deposit amount, required if type is QR/CRYPTO", ex: "100" },
                 { field: "callbackUrl", type: "string", req: true, desc: "HTTPS callback URL for notification", ex: "{{callbackURL}}" },
                 { field: "type", type: "string", req: true, desc: "Transaction type: QR or CRYPTO or TRANSFER", ex: "QR" },
                 { field: "timeout", type: "integer", req: true, desc: "Time in minutes before expiration (min 5)", ex: "10" },

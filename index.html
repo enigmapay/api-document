@@ -13,79 +13,237 @@
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            bgDark: '#0B0D12',
-            bgSecondary: '#0F1118',
-            cardBg: '#151821',
-            cardBgHover: '#191D28',
-            cardBgElevated: '#1D2230',
-            primaryPurple: '#7C5CFF',
-            secondaryPurple: '#7657F6',
-            lightPurple: '#8B6CFF',
-            textPrimary: '#F5F5F7',
-            textSecondary: '#9A9EAA',
-            borderDark: '#292E3B',
-          }
-        }
-      }
+      theme: { extend: { colors: {
+        bgDark: '#0B0D12', bgSecondary: '#0F1118', cardBg: '#151821', cardBgHover: '#191D28', cardBgElevated: '#1D2230',
+        primaryPurple: '#7C5CFF', secondaryPurple: '#7657F6', lightPurple: '#8B6CFF',
+        textPrimary: '#F5F5F7', textSecondary: '#9A9EAA', borderDark: '#292E3B'
+      } } }
     }
   </script>
   <style>
-    body {
-      background-color: #0B0D12;
-      color: #F5F5F7;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0B0D12;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #292E3B;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #7C5CFF;
-    }
-    .purple-glow {
-      box-shadow: 0 0 25px -5px rgba(124, 92, 255, 0.25);
-    }
-    .purple-glow-sm {
-      box-shadow: 0 0 12px -2px rgba(124, 92, 255, 0.3);
-    }
+    body { background-color: #0B0D12; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0D12; }
+    ::-webkit-scrollbar-thumb { background: #292E3B; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7C5CFF; }
+    .purple-glow { box-shadow: 0 0 25px -5px rgba(124, 92, 255, 0.25); }
+    .purple-glow-sm { box-shadow: 0 0 12px -2px rgba(124, 92, 255, 0.3); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .animate-fadeIn { animation: fadeIn .25s ease-out; }
   </style>
 </head>
 <body class="bg-bgDark text-textPrimary antialiased selection:bg-primaryPurple selection:text-white">
   <div id="root"></div>
 
+  <!-- Code samples (taken from the Postman collection). Kept as plain text so no escaping is needed. -->
+  <script type="text/plain" id="code-javascript">
+const crypto = require("crypto");
+const RSA_PRIVATE_KEY_PEM = "YOUR_RSA_PRIVATE_KEY_PEM";
+const TIMESTAMP = Date.now();
+const BODY = {
+  clientId: "YOUR_CLIENT_ID",
+  merchantId: "YOUR_MERCHANT_ID",
+  timestamp: TIMESTAMP,
+  // ...other body fields
+};
+const canonicalString = Object.keys(BODY)
+  .filter(k => k !== "signature")
+  .sort()
+  .map(k => `${k}=${BODY[k]}`)
+  .join("&");
+const signer = crypto.createSign("RSA-SHA256");
+signer.update(canonicalString);
+const signature = signer.sign(RSA_PRIVATE_KEY_PEM, "base64");
+  </script>
+  <script type="text/plain" id="code-java">
+import java.security.*;
+import java.util.*;
+import java.util.Base64;
+public class SignatureGenerator {
+    public static String createSignature(Map<String, String> body, PrivateKey privateKey) throws Exception {
+        List<String> keys = new ArrayList<>(body.keySet());
+        keys.remove("signature");
+        Collections.sort(keys);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < keys.size(); i++) {
+            if (i > 0) sb.append("&");
+            sb.append(keys.get(i)).append("=").append(body.get(keys.get(i)));
+        }
+        Signature signer = Signature.getInstance("SHA256withRSA");
+        signer.initSign(privateKey);
+        signer.update(sb.toString().getBytes("UTF-8"));
+        return Base64.getEncoder().encodeToString(signer.sign());
+    }
+}
+  </script>
+  <script type="text/plain" id="code-php">
+$body = [
+    "clientId" => "YOUR_CLIENT_ID",
+    "merchantId" => "YOUR_MERCHANT_ID",
+    "timestamp" => $timestamp,
+    // ...other body fields
+];
+unset($body["signature"]);
+ksort($body);
+$canonicalString = implode("&", array_map(
+    fn($k, $v) => "$k=$v",
+    array_keys($body),
+    array_values($body)
+));
+openssl_sign($canonicalString, $rawSignature, $rsaPrivateKeyPem, OPENSSL_ALGO_SHA256);
+$signature = base64_encode($rawSignature);
+  </script>
+  <script type="text/plain" id="code-csharp">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+public class SignatureGenerator
+{
+    public static string CreateSignature(Dictionary<string, string> body, RSA rsa)
+    {
+        var keys = body.Keys.Where(k => k != "signature").OrderBy(k => k).ToList();
+        var canonicalString = string.Join("&", keys.Select(k => $"{k}={body[k]}"));
+        var data = Encoding.UTF8.GetBytes(canonicalString);
+        var signatureBytes = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        return Convert.ToBase64String(signatureBytes);
+    }
+}
+  </script>
+
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // --- DATA SOURCE FROM POSTMAN & PDF COMBINED ---
+    // --- DATA SOURCE: BIT-PAYZ REST API Postman collection ---
     const BANK_LIST = [
-      { code: "000", name: "PROMPTPAY", name_th: "พร้อมเพย์", name_en: "PROMPTPAY", color: "#1e4598" },
-      { code: "002", name: "BBL", name_th: "กรุงเทพ", name_en: "BANGKOK BANK", color: "#1e4598" },
-      { code: "004", name: "KBANK", name_th: "กสิกรไทย", name_en: "KASIKORNBANK", color: "#138f2d" },
-      { code: "006", name: "KTB", name_th: "กรุงไทย", name_en: "KRUNG THAI BANK", color: "#1ba5e1" },
-      { code: "011", name: "TMB", name_th: "ทหารไทย", name_en: "TMB BANK", color: "#1279be" },
-      { code: "014", name: "SCB", name_th: "ไทยพาณิชย์", name_en: "SIAM COMMERCIAL BANK", color: "#4e2e7f" },
-      { code: "022", name: "CIMB", name_th: "ซีไอเอ็มบี", name_en: "CIMB THAI BANK", color: "#7e2f36" },
-      { code: "024", name: "UOB", name_th: "ยูโอบี", name_en: "UNITED OVERSEAS BANK (THAI)", color: "#0b3979" },
-      { code: "025", name: "BAY", name_th: "กรุงศรี", name_en: "BANK OF AYUDHYA (KRUNGSRI)", color: "#fec43b" },
-      { code: "030", name: "GSB", name_th: "ออมสิน", name_en: "THE GOVERNMENT SAVINGS BANK", color: "#eb198d" },
-      { code: "033", name: "GHB", name_th: "อาคารสงเคราะห์", name_en: "THE GOVERNMENT HOUSING BANK", color: "#fc4f1f" },
-      { code: "034", name: "BAAC", name_th: "ธ.ก.ส.", name_en: "BANK FOR AGRICULTURE AND AGRICULTURAL COOPERATIVES", color: "#4b9b1d" },
-      { code: "067", name: "TISCO", name_th: "ทิสโก้", name_en: "TISCO BANK", color: "#12549f" },
-      { code: "069", name: "KKP", name_th: "เกียรตินาคินภัทร", name_en: "KIATNAKIN BANK", color: "#635f98" },
-      { code: "073", name: "LHBANK", name_th: "แลนด์ แอนด์ เฮ้าส์", name_en: "LAND AND HOUSES BANK", color: "#6d6e71" },
-      { code: "074", name: "TTB", name_th: "ทีทีบี", name_en: "TMBTHANACHART BANK", color: "#0050f0" },
-      { code: "ENIGMAPAY", name: "ENIGMAPAY", name_th: "ENIGMAPAY", name_en: "ENIGMAPAY", color: "#0050f0" }
-    ];
+  {
+    "code": "000",
+    "name": "PROMPTPAY",
+    "name_th": "พร้อมเพย์",
+    "name_en": "PROMPTPAY",
+    "color": "#1e4598"
+  },
+  {
+    "code": "002",
+    "name": "BBL",
+    "name_th": "กรุงเทพ",
+    "name_en": "BANGKOK BANK",
+    "color": "#1e4598"
+  },
+  {
+    "code": "004",
+    "name": "KBANK",
+    "name_th": "กสิกรไทย",
+    "name_en": "KASIKORNBANK",
+    "color": "#138f2d"
+  },
+  {
+    "code": "006",
+    "name": "KTB",
+    "name_th": "กรุงไทย",
+    "name_en": "KRUNG THAI BANK",
+    "color": "#1ba5e1"
+  },
+  {
+    "code": "011",
+    "name": "TMB",
+    "name_th": "ทหารไทย",
+    "name_en": "TMB BANK",
+    "color": "#1279be"
+  },
+  {
+    "code": "014",
+    "name": "SCB",
+    "name_th": "ไทยพาณิชย์",
+    "name_en": "SIAM COMMERCIAL BANK",
+    "color": "#4e2e7f"
+  },
+  {
+    "code": "022",
+    "name": "CIMB",
+    "name_th": "ซีไอเอ็มบี",
+    "name_en": "CIMB THAI BANK",
+    "color": "#7e2f36"
+  },
+  {
+    "code": "024",
+    "name": "UOB",
+    "name_th": "ยูโอบี",
+    "name_en": "UNITED OVERSEAS BANK (THAI)",
+    "color": "#0b3979"
+  },
+  {
+    "code": "025",
+    "name": "BAY",
+    "name_th": "กรุงศรี",
+    "name_en": "BANK OF AYUDHYA (KRUNGSRI)",
+    "color": "#fec43b"
+  },
+  {
+    "code": "030",
+    "name": "GSB",
+    "name_th": "ออมสิน",
+    "name_en": "THE GOVERNMENT SAVINGS BANK",
+    "color": "#eb198d"
+  },
+  {
+    "code": "033",
+    "name": "GHB",
+    "name_th": "อาคารสงเคราะห์",
+    "name_en": "THE GOVERNMENT HOUSING BANK",
+    "color": "#fc4f1f"
+  },
+  {
+    "code": "034",
+    "name": "BAAC",
+    "name_th": "ธ.ก.ส.",
+    "name_en": "BANK FOR AGRICULTURE AND AGRICULTURAL COOPERATIVES",
+    "color": "#4b9b1d"
+  },
+  {
+    "code": "067",
+    "name": "TISCO",
+    "name_th": "ทิสโก้",
+    "name_en": "TISCO BANK",
+    "color": "#12549f"
+  },
+  {
+    "code": "069",
+    "name": "KKP",
+    "name_th": "เกียรตินาคินภัทร",
+    "name_en": "KIATNAKIN BANK",
+    "color": "#635f98"
+  },
+  {
+    "code": "071",
+    "name": "TCRB",
+    "name_th": "ไทยเครดิต",
+    "name_en": "THAI CREDIT BANK",
+    "color": "#6d6e71"
+  },
+  {
+    "code": "073",
+    "name": "LHBANK",
+    "name_th": "แลนด์ แอนด์ เฮ้าส์",
+    "name_en": "LAND AND HOUSES BANK",
+    "color": "#6d6e71"
+  },
+  {
+    "code": "074",
+    "name": "TTB",
+    "name_th": "ทีทีบี",
+    "name_en": "TMBTHANACHART BANK",
+    "color": "#0050f0"
+  },
+  {
+    "code": "ENIGMAPAY",
+    "name": "ENIGMAPAY",
+    "name_th": "ENIGMAPAY",
+    "name_en": "ENIGMAPAY",
+    "color": "#0050f0"
+  }
+];
 
     const API_SCHEMA = {
       info: {
@@ -111,61 +269,58 @@
               method: "GET",
               path: "/api/v1/client/bank/list/code",
               description: "Provides a list of all bank information available in our system.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true, desc: "API key issued by ENIGMAPAY" }],
+              endpointNotes: ["The sample response below is shortened to the first three entries. Use the `name` value (short name) as `bankName` in deposit and payout requests."],
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true, desc: "API key issued by ENIGMAPAY" }],
               params: [],
               body: null,
               hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  data: BANK_LIST.slice(0, 3)
-                }
-              }
-            },
-            {
-              id: "create-signature",
-              name: "Create Signature",
-              method: "POST",
-              path: "/api/v1/jwt/create",
-              description: "Generates a JWT HMAC-SHA256 signature for authentication. We recommend generating signatures server-side in code rather than via endpoint.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
-              params: [],
-              body: {
-                secretKey: "ENG_SEC_9x8v7c6b5a4m",
-                timestamp: 1767000966705,
-                payload: {
-                  merchantId: "MERCH_882910",
-                  clientId: "CLI_994012"
-                }
-              },
-              hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudElkIjoiY1ZmM1VoR2FKbSIsImNsaWVudElkIjoiUDFSVU85cUh1bSIsImlhdCI6MTc6NzAwMDk2NjcwNX0.xh5q3dwbGtbwqg5-SMGr_TK8XSlXQgD18lRLyfOAYpg",
-                  timestamp: 1767000966705
-                }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "data": [
+    {
+      "code": "000",
+      "name": "PROMPTPAY",
+      "name_th": "พร้อมเพย์",
+      "name_en": "PROMPTPAY",
+      "color": "#1e4598"
+    },
+    {
+      "code": "002",
+      "name": "BBL",
+      "name_th": "กรุงเทพ",
+      "name_en": "BANGKOK BANK",
+      "color": "#1e4598"
+    },
+    {
+      "code": "004",
+      "name": "KBANK",
+      "name_th": "กสิกรไทย",
+      "name_en": "KASIKORNBANK",
+      "color": "#138f2d"
+    }
+  ]
+} }]
             },
             {
               id: "get-account-name",
               name: "Get Account Name (Disabled)",
               method: "POST",
               path: "/api/v1/client/bank/verify/bankAccountName",
-              description: "Verifies transfer transactions and returns the receiver's bank account holder name.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
-              params: [],
+              description: "This POST request is used for verifying transfer transactions. It returns the receiver's bank account name. This endpoint is currently disabled.",
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
+              params: [
+                { field: "bankAccountNumber", type: "string", req: true, desc: "Bank account number to verify", ex: "1234567890" },
+                { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "SCB" }
+              ],
               body: {
-                bankAccountNumber: "9876543210",
-                bankName: "SCB"
-              },
+  "bankAccountNumber": "1234567890",
+  "bankName": "SCB"
+},
               hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  data: "Jonny Doe"
-                }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "data": "นาย เฮง ร่ำรวย"
+} }]
             }
           ]
         },
@@ -182,196 +337,430 @@
               endpointNotes: [
                 "We encourage you to use a real URL for the callbackUrl parameter so you can check the data it receives. If you're unsure how to do this, try using a free service like https://www.postb.in or https://pipedream.com/requestbin. These platforms will provide you with a sample URL to receive callback data.",
                 "The timestamp must be the same as the one used when creating the signature for this current request.",
-                "The bankName should use the code provided by the Bank List (i.e. SCB,KTB, BAY, etc.).",
-                "During the development process, if the status remains in pending, you will need to ask us to force approval of the transaction. Once approved, it will show as completed in your admin portal."
+                "The bankName should use the name (short name) provided by the Bank List API (i.e. SCB, KTB, BAY, etc.).",
+                "During the development process, if the status remains in pending, you will need to ask us to force approval of the transaction. Once approved, it will show as completed in your admin portal.",
+                "amount is required when type is QR or CRYPTO, and not required when type is TRANSFER."
               ],
               responseNotes: [
-                "We provide a payment page that is being returned via a parameter named iframeSrc to be rendered inside an iframe tag. If you want for the QR page to directly show the QR Code, you can remove/hide the confirmation page or \"I understand\" overlay by adding a parameter to the URL: &noOverlay=true (e.g. https://payment.enigmapay.tech?token=[long-string-token]&noOverlay=true)."
+                "We provide a payment page that is returned via a parameter named iframeSrc to be rendered inside an iframe tag. If you want the QR page to directly show the QR Code, you can remove/hide the confirmation page or \"I understand\" overlay by adding a parameter to the URL: &noOverlay=true (e.g. https://payment.enigmapay.tech?token=[long-string-token]&noOverlay=true)."
               ],
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
                 { field: "clientId", type: "string", req: true, desc: "The client's unique identifier", ex: "{{CLIENT_ID}}" },
                 { field: "merchantId", type: "string", req: true, desc: "The merchant's unique identifier", ex: "{{MERCHANT_ID}}" },
-                { field: "transactionId", type: "string", req: true, desc: "Unique transaction ID created by client", ex: "{{uniqueTXID}}" },
-                { field: "bankAccountNumber", type: "string", req: true, desc: "Customer bank account number", ex: "{{uniqueBankNumber}}" },
-                { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "{{bankname}}" },
-                { field: "name", type: "string", req: true, desc: "Customer name", ex: "{{uniqueName}}" },
-                { field: "amount", type: "float/integer", req: true, desc: "The deposit amount, required if type is QR/CRYPTO", ex: "100" },
-                { field: "callbackUrl", type: "string", req: true, desc: "HTTPS callback URL for notification", ex: "{{callbackURL}}" },
-                { field: "type", type: "string", req: true, desc: "Transaction type: QR or CRYPTO or TRANSFER", ex: "QR" },
-                { field: "timeout", type: "integer", req: true, desc: "Time in minutes before expiration (min 5)", ex: "10" },
-                { field: "signature", type: "string", req: true, desc: "JWT signature derived from secret key", ex: "eyJhbGciOi..." },
-                { field: "timestamp", type: "integer", req: true, desc: "Must match timestamp used in signature", ex: "1767000966705" },
+                { field: "transactionId", type: "string", req: true, desc: "Unique transaction ID created by the client", ex: "BZP0PTB014467231" },
+                { field: "bankAccountNumber", type: "string", req: true, desc: "The bank account number for the transaction", ex: "3140371234" },
+                { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "KTB" },
+                { field: "name", type: "string", req: false, desc: "The name of the customer", ex: "เฮง ร่ำรวย" },
+                { field: "phone", type: "string", req: false, desc: "Customer's phone number", ex: "\"\"" },
+                { field: "amount", type: "float/integer", req: "Conditional", desc: "Deposit amount. Required if type is QR/CRYPTO; not required if type is TRANSFER", ex: "100" },
+                { field: "callbackUrl", type: "string", req: true, desc: "URL for the callback notification. Must be HTTPS", ex: "https://xxx.xxx/callback" },
+                { field: "type", type: "string", req: true, desc: "Transaction type: QR or CRYPTO", ex: "QR / CRYPTO" },
+                { field: "timeout", type: "integer", req: true, desc: "Time in minutes before the deposit expires (5 or more recommended)", ex: "10" },
+                { field: "signature", type: "string", req: true, desc: "Base64 RSA signature (RSASSA-PKCS1-v1_5 / SHA-256) of the canonical string", ex: "HkR5tM9xLqZ2bWfE7pNv... (Base64)" },
+                { field: "timestamp", type: "integer", req: true, desc: "Must match the timestamp used in the signature (within 5 minutes of server time)", ex: "1713426704232" },
                 // Strict validation extra parameters
-                { field: "bankAccountHolderName", type: "string", req: "Strict Only", desc: "User bank account holder name", ex: "Jonny Doe" },
-                { field: "lastDepositDate", type: "string", req: "Strict Only", desc: "Latest deposit date (ISO 8601)", ex: "2026-05-10" },
-                { field: "lastRegisterDate", type: "string", req: "Strict Only", desc: "Customer registration date (ISO 8601)", ex: "2026-03-25" },
-                { field: "totalDepositAmount", type: "integer", req: "Strict Only*", desc: "Total deposit THB. Required if totalTurnover omitted", ex: "100000" },
-                { field: "totalTurnover", type: "integer", req: "Strict Only*", desc: "Total turnover THB. Required if totalDepositAmount omitted", ex: "450000" },
-                { field: "platformUserId", type: "string", req: "Strict Only", desc: "Merchant player account ID", ex: "USR_100928" }
+                { field: "bankAccountHolderName", type: "string", req: "Strict Only", desc: "User's bank account holder name. Use the same name for both deposit and withdrawal under the same player account", ex: "John Doe" },
+                { field: "lastDepositDate", type: "string", req: "Strict Only", desc: "User's latest deposit date (ISO 8601)", ex: "2026-05-10" },
+                { field: "lastRegisterDate", type: "string", req: "Strict Only", desc: "Actual date the user registered on the merchant platform (ISO 8601)", ex: "2026-01-15" },
+                { field: "totalDepositAmount", type: "integer", req: "Strict Only*", desc: "User's total deposit amount in THB. Minimum: 100000. Required if totalTurnover is not provided", ex: "100000" },
+                { field: "totalTurnover", type: "integer", req: "Strict Only*", desc: "User's total turnover in THB. Minimum: 300000. Required if totalDepositAmount is not provided", ex: "450000" },
+                { field: "platformUserId", type: "string", req: "Strict Only", desc: "Unique user ID from the merchant platform", ex: "USR_100928" }
               ],
               body: {
-                clientId: "{{CLIENT_ID}}",
-                merchantId: "{{MERCHANT_ID}}",
-                transactionId: "{{uniqueTXID}}",
-                bankAccountNumber: "{{uniqueBankNumber}}",
-                bankName: "{{bankname}}",
-                name: "{{uniqueName}}",
-                bankAccountHolderName: "Jonny Doe",
-                lastDepositDate: "2026-05-10",
-                lastRegisterDate: "2026-03-25",
-                totalDepositAmount: 100000,
-                totalTurnover: 450000,
-                platformUserId: "USR_100928",
-                callbackUrl: "{{callbackURL}}",
-                type: "QR",
-                timeout: 10,
-                signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudElkIjoiY1ZmM1VoR2FKbSIsImNsaWVudElkIjoiUDFSVU85cUh1bSIsImlhdCI6MTc6NzAwMDk2NjcwNX0.xh5q3dwbGtbwqg5-SMGr_TK8XSlXQgD18lRLyfOAYpg",
-                timestamp: 1767000966705
-              },
+  "clientId": "{{CLIENT_ID}}",
+  "merchantId": "{{MERCHANT_ID}}",
+  "transactionId": "{{uniqueTXID}}",
+  "bankAccountNumber": "{{uniqueBankNumber}}",
+  "bankName": "{{bankname}}",
+  "name": "{{uniqueName}}",
+  "amount": 100,
+  "bankAccountHolderName": "Jonny Doe",
+  "lastDepositDate": "2026-05-10",
+  "lastRegisterDate": "2026-03-25",
+  "totalDepositAmount": 100000,
+  "totalTurnover": 450000,
+  "platformUserId": "USR_100928",
+  "callbackUrl": "{{callbackURL}}",
+  "type": "CRYPTO",
+  "timeout": 10,
+  "signature": "HkR5tM9xLqZ2bWfE7pNvJ1oYsU4cDgI8aXeKmCPrTwAhBiOuFjV6ySzL3nQdG0+XwR5mK9sLpEz7NhTA2qBvI3DcJfU8gY1oMtPeWxQa4kCl6rVZj5bHmF0yNsOuI7dLgQ2xPaKtEJRh9wVo3NcBM4eFzGA1bT8sIpkW6rOmYLDv2P5HQjURn7tCeXF0wZaBI9lsV4KdM3gohJEuTqNy1WcP6xrAZO8kFm5bRlI2eDvHtGo4UqJsY7nMwXZa4=",
+  "timestamp": 1767000966705
+},
               hasStrictValidation: true,
               strictValidationDetails: {
-                explanation: "Strict Validation protects merchant accounts against First-Time Deposit (FTD) fraud, multi-accounting, and immediate cashouts by enforcing business integrity checks.",
+                explanation: "Strict Validation protects merchant accounts against First-Time Deposit (FTD) fraud, multi-accounting, and immediate cashouts by enforcing business integrity checks. It is required only if the Strict Validation option is enabled for your merchant.",
                 rules: [
-                  { rule: "Same-Day Registration Lock", desc: "Transactions are forbidden on the player's registration day. Checked via lastRegisterDate." },
-                  { rule: "Single Bank Account Enforce", desc: "One bank account per platformUserId. System checks completed transactions for mismatched bankAccountNumber or bankName." },
-                  { rule: "Turnover Requirement", desc: "Player must provide at least totalTurnover (e.g. 450,000 THB) or totalDepositAmount (e.g. 100,000 THB)." }
+                  { rule: "Same-Day Registration Lock", desc: "Transactions are not allowed on the day a player registers. The system compares lastRegisterDate with the transaction date." },
+                  { rule: "Single Bank Account Enforce", desc: "One bank account per platformUserId. The system checks completed transactions for a different bankAccountNumber or bankName. Use one bankAccountHolderName for both deposits and withdrawals." },
+                  { rule: "Turnover Requirement", desc: "Player must meet totalTurnover of at least 300,000 THB, or totalDepositAmount of at least 100,000 THB." }
                 ],
                 validPayload: {
-                  clientId: "{{CLIENT_ID}}",
-                  merchantId: "{{MERCHANT_ID}}",
-                  transactionId: "{{uniqueTXID}}",
-                  bankAccountNumber: "{{uniqueBankNumber}}",
-                  bankName: "{{bankname}}",
-                  name: "{{uniqueName}}",
-                  bankAccountHolderName: "Jonny Doe",
-                  lastDepositDate: "2026-05-10",
-                  lastRegisterDate: "2026-03-25",
-                  totalDepositAmount: 100000,
-                  totalTurnover: 450000,
-                  platformUserId: "USR_100928",
-                  callbackUrl: "{{callbackURL}}",
-                  type: "CRYPTO",
-                  timeout: 10,
-                  signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudElkIjoiY1ZmM1VoR2FKbSIsImNsaWVudElkIjoiUDFSVU85cUh1bSIsImlhdCI6MTc6NzAwMDk2NjcwNX0.xh5q3dwbGtbwqg5-SMGr_TK8XSlXQgD18lRLyfOAYpg",
-                  timestamp: 1767000966705
-                },
+  "clientId": "{{CLIENT_ID}}",
+  "merchantId": "{{MERCHANT_ID}}",
+  "transactionId": "{{uniqueTXID}}",
+  "bankAccountNumber": "{{uniqueBankNumber}}",
+  "bankName": "{{bankname}}",
+  "name": "{{uniqueName}}",
+  "amount": 100,
+  "bankAccountHolderName": "Jonny Doe",
+  "lastDepositDate": "2026-05-10",
+  "lastRegisterDate": "2026-03-25",
+  "totalDepositAmount": 100000,
+  "totalTurnover": 450000,
+  "platformUserId": "USR_100928",
+  "callbackUrl": "{{callbackURL}}",
+  "type": "CRYPTO",
+  "timeout": 10,
+  "signature": "HkR5tM9xLqZ2bWfE7pNvJ1oYsU4cDgI8aXeKmCPrTwAhBiOuFjV6ySzL3nQdG0+XwR5mK9sLpEz7NhTA2qBvI3DcJfU8gY1oMtPeWxQa4kCl6rVZj5bHmF0yNsOuI7dLgQ2xPaKtEJRh9wVo3NcBM4eFzGA1bT8sIpkW6rOmYLDv2P5HQjURn7tCeXF0wZaBI9lsV4KdM3gohJEuTqNy1WcP6xrAZO8kFm5bRlI2eDvHtGo4UqJsY7nMwXZa4=",
+  "timestamp": 1767000966705
+},
                 invalidPayload: {
                   clientId: "{{CLIENT_ID}}",
                   merchantId: "{{MERCHANT_ID}}",
                   transactionId: "{{uniqueTXID}}",
                   bankAccountNumber: "9988776655",
                   bankName: "KBANK",
-                  lastRegisterDate: "2026-09-09", // SAME DAY REGISTRATION!
+                  amount: 100,
+                  type: "QR",
+                  lastRegisterDate: new Date().toISOString().slice(0, 10), // SAME DAY REGISTRATION!
                   platformUserId: "USR_100928"
                   // Missing totalDepositAmount & totalTurnover!
                 },
-                invalidReason: "Fails Strict Rules: 1) Registration date matches current transaction date (Same-day block). 2) Missing both totalDepositAmount and totalTurnover fields."
+                invalidReason: "Fails Strict Rules: 1) Registration date matches the current transaction date (same-day block). 2) Missing both totalDepositAmount and totalTurnover, so the turnover requirement cannot be met."
               },
-              responses: {
-                200: {
-                  status: "success",
-                  message: "Create Success",
-                  data: {
-                    clientId: "{{CLIENT_ID}}",
-                    merchantId: "{{MERCHANT_ID}}",
-                    referenceId: "REF_ENG_99812",
-                    transactionId: "{{uniqueTXID}}",
-                    status: "pending",
-                    amount: 200,
-                    depositAmount: 199.58,
-                    iframeSrc: "https://payment.enigmapay.tech?token=eyJhbGciOiJIUzI1Ni...&noOverlay=true",
-                    bankAccountNumber: "9777233470",
-                    bankAccountName: "ENIGMAPAY Gateway",
-                    bankName: "BBL",
-                    bankCode: "002",
-                    expireDate: "2026-09-09T12:30:34.581Z"
-                  }
-                }
-              }
+              responseExamples: [
+                { label: "QR Deposit", body: {
+  "status": "success",
+  "message": "Create Success",
+  "data": {
+    "clientId": "nHUxQbHgEu",
+    "merchantId": "VOBM7qzaRH",
+    "referenceId": "w5EIFM4i1M",
+    "transactionId": "BZP0PTB01776723e7X1",
+    "status": "pending",
+    "amount": 2,
+    "depositAmount": 1.54,
+    "iframeSrc": "https://payment.enigmapay.tech?token=<PAYMENT_PAGE_TOKEN>",
+    "bankAccountNumber": "1714436599",
+    "bankAccountName": "ปิยรัฐ แก้วจันทร์",
+    "bankName": "SCB",
+    "bankCode": "014",
+    "promptpayNumber": "0955157457",
+    "expireDate": "2024-10-07T17:30:34.581Z",
+    "customerData": {
+      "bankAccountNumber": "3140312345",
+      "bankName": "BBL",
+      "name": "Jonny Doe"
+    }
+  }
+} },
+                { label: "CRYPTO Deposit", body: {
+  "status": "success",
+  "message": "Create Success",
+  "data": {
+    "clientId": "nHUxQbHgEu",
+    "merchantId": "VOBM7qzaRH",
+    "referenceId": "w5EIFM4i1M",
+    "transactionId": "BZP0PTB01776723e7X1",
+    "status": "pending",
+    "amount": 2,
+    "depositAmount": 1.54,
+    "iframeSrc": "https://payment.enigmapay.tech?token=<PAYMENT_PAGE_TOKEN>",
+    "bankAccountNumber": "1714436599",
+    "bankAccountName": "ปิยรัฐ แก้วจันทร์",
+    "bankName": "SCB",
+    "bankCode": "014",
+    "promptpayNumber": "0955157457",
+    "expireDate": "2024-10-07T17:30:34.581Z",
+    "customerData": {
+      "bankAccountNumber": "3140312345",
+      "bankName": "BBL",
+      "name": "เฮง ร่ำรวย"
+    }
+  }
+} }
+              ]
             },
             {
               id: "list-deposit",
               name: "List Deposit Transactions",
               method: "GET",
               path: "/api/v1/deposit",
-              description: "Retrieves deposit transactions filtered by date range and merchant ID with pagination.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              description: "This API retrieves a list of deposit transactions based on the specified query parameters, including date range, merchant ID, page size, and page index.",
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
-                { field: "startDate", type: "string (YYYY-MM-DD)", req: true, ex: "2026-09-01" },
-                { field: "endDate", type: "string (YYYY-MM-DD)", req: true, ex: "2026-09-09" },
-                { field: "merchantId", type: "string", req: true, ex: "MERCH_882910" },
-                { field: "pageSize", type: "integer", req: false, ex: "20" },
-                { field: "pageIndex", type: "integer", req: false, ex: "1" }
+                { field: "startDate", type: "string (YYYY-MM-DD)", req: true, desc: "Start date of the transaction range", ex: "2023-10-06" },
+                { field: "endDate", type: "string (YYYY-MM-DD)", req: true, desc: "End date of the transaction range", ex: "2023-10-12" },
+                { field: "merchantId", type: "string", req: true, desc: "The unique ID of the merchant", ex: "{{MERCHANT_ID}}" },
+                { field: "pageSize", type: "integer", req: false, desc: "Number of transactions per page", ex: "20" },
+                { field: "pageIndex", type: "integer", req: false, desc: "The page number for pagination", ex: "1" }
               ],
               hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  data: [
-                    {
-                      referenceId: "REF_ENG_99812",
-                      transactionId: "TX_ENG_2026_001",
-                      amount: 200,
-                      status: "completed",
-                      type: "CRYPTO",
-                      createdAt: "2026-09-09T10:15:00.000Z"
-                    }
-                  ],
-                  total: 1
-                }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "data": [
+    {
+      "referenceId": "1z8GmtI2g5",
+      "expireDate": {
+        "__type": "Date",
+        "iso": "2024-10-07T17:31:57.473Z"
+      },
+      "clientId": "nHUxQbHgEu",
+      "clientName": "demo2",
+      "transactionId": "BZP0PTB01776723e7X2",
+      "bankAccountNumber": "3140312345",
+      "bankName": "BBL",
+      "bankCode": "002",
+      "name": "เฮง ร่ำรวย",
+      "callbackUrl": "https://xxxx.com/callback",
+      "ipAddress": "203.0.113.10",
+      "type": "TRANSFER",
+      "bankId": "nSSx7LL6X2",
+      "bank": {
+        "__type": "Pointer",
+        "className": "Bank",
+        "objectId": "nSSx7LL6X2"
+      },
+      "status": "expired",
+      "systemPromptpayNumber": "0955157457",
+      "systemBankAccountNumber": "1714436599",
+      "systemBankCode": "014",
+      "systemBankName": "SCB",
+      "systemBankAccountName": "ปิยรัฐ แก้วจันทร์",
+      "timestamp": 1728321993142,
+      "merchantId": "VOBM7qzaRH",
+      "merchantName": "demo2",
+      "createdAt": "2024-10-07T17:26:57.637Z",
+      "updatedAt": "2024-10-07T17:32:00.116Z",
+      "webhookData": {
+        "referenceId": "1z8GmtI2g5",
+        "transactionId": "BZP0PTB01776723e7X2",
+        "status": "expired",
+        "timestamp": 1728322320053,
+        "hash": "U2FsdGVkX1/hJCbep+Yy8xxRNRailfYcm0vbi3uBNyzoT8lwkHA+W1zf+WKoYmag"
+      }
+    },
+    {
+      "referenceId": "w5EIFM4i1M",
+      "expireDate": {
+        "__type": "Date",
+        "iso": "2024-10-07T17:30:34.581Z"
+      },
+      "clientId": "nHUxQbHgEu",
+      "clientName": "demo2",
+      "transactionId": "BZP0PTB01776723e7X1",
+      "amount": 2,
+      "bankAccountNumber": "3140312345",
+      "bankName": "BBL",
+      "bankCode": "002",
+      "name": "เฮง ร่ำรวย",
+      "callbackUrl": "https://xxxx.com/callback",
+      "ipAddress": "203.0.113.10",
+      "type": "QR",
+      "bankId": "nSSx7LL6X2",
+      "bank": {
+        "__type": "Pointer",
+        "className": "Bank",
+        "objectId": "nSSx7LL6X2"
+      },
+      "status": "expired",
+      "systemPromptpayNumber": "0955157457",
+      "systemBankAccountNumber": "1714436599",
+      "systemBankCode": "014",
+      "systemBankName": "SCB",
+      "systemBankAccountName": "ปิยรัฐ แก้วจันทร์",
+      "timestamp": 1728319408897,
+      "merchantId": "VOBM7qzaRH",
+      "merchantName": "demo2",
+      "depositAmount": 1.54,
+      "qrcode": "00020101021129370016A00000067701011101130066955157457530376454041.545802TH6304A299",
+      "createdAt": "2024-10-07T17:25:34.776Z",
+      "updatedAt": "2024-10-07T17:30:42.498Z",
+      "webhookData": {
+        "referenceId": "w5EIFM4i1M",
+        "transactionId": "BZP0PTB01776723e7X1",
+        "status": "expired",
+        "timestamp": 1728322240045,
+        "hash": "U2FsdGVkX19ikrgBKH81gFVP18riN1rjEGACfcuGVra2+AbgePiEj11ZHZ5RBVzi"
+      }
+    }
+  ],
+  "total": 92
+} }]
             },
             {
               id: "get-deposit-by-ref",
               name: "Get Deposit Transaction By Ref ID",
               method: "GET",
               path: "/api/v1/deposit/:referenceId",
-              description: "Fetches complete details for a single deposit transaction using the gateway Reference ID.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              description: "This API retrieves the details of a specific deposit transaction using the reference ID, which is returned after successfully creating a deposit transaction.",
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
-                { field: "referenceId", type: "string (Path Param)", req: true, ex: "REF_ENG_99812" }
+                { field: "referenceId", type: "string (Path Param)", req: true, desc: "The unique ID received after successfully creating a deposit transaction", ex: "{{referenceId}}" }
               ],
               hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  data: {
-                    referenceId: "REF_ENG_99812",
-                    transactionId: "TX_ENG_2026_001",
-                    status: "completed",
-                    amount: 200,
-                    depositAmount: 199.58,
-                    type: "CRYPTO",
-                    createdAt: "2026-09-09T10:15:00.000Z"
-                  }
-                }
-              }
+              responseExamples: [
+                { label: "Standard", body: {
+  "status": "success",
+  "data": {
+    "referenceId": "1z8GmtI2g5",
+    "expireDate": {
+      "__type": "Date",
+      "iso": "2024-10-07T17:31:57.473Z"
+    },
+    "clientId": "nHUxQbHgEu",
+    "clientName": "demo2",
+    "transactionId": "BZP0PTB01776723e7X2",
+    "amount": 100,
+    "bankAccountNumber": "3140312345",
+    "bankName": "BBL",
+    "bankCode": "002",
+    "name": "เฮง ร่ำรวย",
+    "callbackUrl": "https://xxxx.com/callback",
+    "type": "QR",
+    "bankId": "nSSx7LL6X2",
+    "status": "expired",
+    "systemBankCode": "014",
+    "timestamp": 1728321993142,
+    "merchantId": "VOBM7qzaRH",
+    "merchantName": "demo2",
+    "depositAmount": 101.42,
+    "qrcode": "00020101021129350016A00000067701011101110066234567853037645406101.425889TH6304DE8D",
+    "createdAt": "2024-10-07T17:26:57.637Z",
+    "updatedAt": "2024-10-07T17:32:00.116Z",
+    "matchDate": {
+      "__type": "Date",
+      "iso": "2024-10-07T23:20:30.200Z"
+    },
+    "webhookData": {
+      "referenceId": "1z8GmtI2g5",
+      "clientId": "nHUxQbHgEu",
+      "transactionId": "BZP0PTB01776723e7X2",
+      "status": "expired",
+      "timestamp": 1728322320053,
+      "hash": "U2FsdGVkX1/hJCbep+Yy8xxRNRailfYcm0vbi3uBNyzoT8lwkHA+W1zf+WKoYmag"
+    }
+  }
+} },
+                { label: "Strict Validation", body: {
+  "status": "success",
+  "data": {
+    "referenceId": "UrWdx3s42lcAP",
+    "expireDate": {
+      "__type": "Date",
+      "iso": "2026-05-14T07:14:09.878Z"
+    },
+    "clientId": "omsdk1QzKO3f",
+    "clientName": "testclient",
+    "transactionId": "TransactionsKYCtest1",
+    "amount": 100,
+    "bankAccountNumber": "123456789220",
+    "bankName": "SCB",
+    "bankCode": "014",
+    "name": "สุพัตรา",
+    "callbackUrl": "https://xxxx.com/callback",
+    "type": "QR",
+    "bankId": "v4uAs1AwEnuh",
+    "status": "pending",
+    "timestamp": 1767000966705,
+    "bankAccountHolderName": "John Doe",
+    "lastDepositDate": "2026-05-10",
+    "lastWithdrawalDate": "2026-05-09",
+    "lastRegisterDate": "2026-01-15",
+    "totalTurnover": 450000,
+    "platformUserId": "USR_100928",
+    "merchantId": "7UkPsGwBea",
+    "merchantName": "test123",
+    "depositAmount": 100.43,
+    "qrcode": "000201010211129350016A00000067701011101110066234567853037645406100.435802TH63047DA5",
+    "settlementStatus": "unknown",
+    "createdAt": "2026-05-14T07:04:09.942Z",
+    "updatedAt": "2026-05-14T07:04:09.942Z"
+  }
+} }
+              ]
             },
             {
               id: "deposit-webhook-qr",
-              name: "Deposit Webhook Callback [QR/CRYPTO]",
+              name: "Deposit Webhook Callback [QR]",
               method: "POST",
-              path: "https://sample.enigmapay.com/callback",
-              description: "System notification sent to your callbackUrl when deposit reaches 'completed' or 'expired'. Hashed with AES.",
+              path: "{{client_deposit_webhook_url}}",
+              description: "The webhook callback is triggered to the callback URL specified in the create deposit request when the transaction reaches either the completed or expired status.",
+              endpointNotes: [
+                "hash is an AES-encrypted value where the transactionId is hashed using a key created by concatenating your API_KEY and SECRET_KEY.",
+                "Your server must respond with {\"webhookResponse\": \"success\"} upon receiving the callback."
+              ],
+              headers: [{ key: "Content-Type", value: "application/json" }],
+              params: [
+                { field: "referenceId", type: "string", req: true, desc: "The unique reference ID for the transaction", ex: "{{referenceId}}" },
+                { field: "transactionId", type: "string", req: true, desc: "The unique transaction ID", ex: "{{transactionId}}" },
+                { field: "clientId", type: "string", req: true, desc: "The client's unique identifier", ex: "{{CLIENT_ID}}" },
+                { field: "merchantId", type: "string", req: true, desc: "The merchant's unique identifier", ex: "{{MERCHANT_ID}}" },
+                { field: "bankCode", type: "string", req: true, desc: "The bank code", ex: "074" },
+                { field: "bankName", type: "string", req: true, desc: "The bank short name", ex: "TTB" },
+                { field: "bankAccountNumber", type: "string", req: true, desc: "The (masked) bank account number involved", ex: "62xxxxxx40" },
+                { field: "bankAccountName", type: "string", req: false, desc: "The bank account holder's name (if available)", ex: "" },
+                { field: "amount", type: "float", req: true, desc: "The transaction amount", ex: "400.64" },
+                { field: "status", type: "string", req: true, desc: "completed or expired", ex: "completed" },
+                { field: "timestamp", type: "integer", req: true, desc: "Unix timestamp of when the transaction was initiated", ex: "1728329638" },
+                { field: "matchTimestamp", type: "integer", req: true, desc: "Unix timestamp of when the transaction was matched", ex: "1728329640826" },
+                { field: "type", type: "string", req: true, desc: "The type of transaction", ex: "QR" },
+                { field: "hash", type: "string", req: true, desc: "AES-encrypted hash of the transactionId (key = API_KEY + SECRET_KEY)", ex: "U2FsdGVkX1/Z6E..." }
+              ],
+              body: {
+  "referenceId": "{{referenceId}}",
+  "transactionId": "{{transactionId}}",
+  "clientId": "{{CLIENT_ID}}",
+  "merchantId": "{{MERCHANT_ID}}",
+  "bankCode": "074",
+  "bankName": "TTB",
+  "bankAccountNumber": "62xxxxxx40",
+  "bankAccountName": "",
+  "amount": 400.64,
+  "status": "completed",
+  "timestamp": 1728329638,
+  "matchTimestamp": 1728329640826,
+  "type": "QR",
+  "hash": "U2FsdGVkX1/Z6EHf3XX6hmzlnK7TvYoLKsUlyR0F47LIERkRq2fKKhKwpwq3j9wu"
+},
+              hasStrictValidation: false,
+              responseLabel: "Expected Response From Your Server",
+              responseExamples: [{ label: "Acknowledge", body: {
+  "webhookResponse": "success"
+} }]
+            },
+            {
+              id: "deposit-webhook-crypto",
+              name: "Deposit Webhook Callback [CRYPTO]",
+              method: "POST",
+              path: "{{client_deposit_webhook_url}}",
+              description: "The webhook callback is triggered to the callback URL specified in the create deposit request when the transaction reaches either the completed or expired status.",
+              endpointNotes: [
+                "hash is an AES-encrypted value where the transactionId is hashed using a key created by concatenating your API_KEY and SECRET_KEY.",
+                "Your server must respond with {\"webhookResponse\": \"success\"} upon receiving the callback."
+              ],
               headers: [{ key: "Content-Type", value: "application/json" }],
               params: [],
               body: {
-                referenceId: "REF_ENG_99812",
-                transactionId: "TX_ENG_2026_001",
-                clientId: "CLI_994012",
-                merchantId: "MERCH_882910",
-                bankCode: "074",
-                bankName: "TTB",
-                bankAccountNumber: "62xxxxxx40",
-                amount: 400.64,
-                status: "completed",
-                hash: "AES_ENCRYPTED_STRING"
-              },
+  "clientId": "iPsqLTGGNw",
+  "merchantId": "QENpCcyALd",
+  "transactionId": "bf5f0c4290ba4b35a57cc2907603f82e",
+  "bankAccountNumber": "4000123456789010",
+  "bankName": "BBL",
+  "name": "John Doe",
+  "amount": "100",
+  "callbackUrl": "https://xxxx.com/callback",
+  "type": "CRYPTO",
+  "timeout": "15",
+  "timestamp": "1777564078557",
+  "signature": "TbWuX9nFoRsI3mLqKhVE6pGzC2jOYlN7eDAcMBfJvH8kP4QwT5rUyZaX1dSgNiO0bEhVmFRpKqsCLjAeDTnMGwYXuB7PfI2vlZtoQ6rkJ4dNbUcHyW3aEsFpOVmxKgRTiQ1JnLD8hoY5PbCwZeGujMrVNqAXsK2FkITdB6lyEcP7OmHUwJ9fZoRtnaXgSvCbiQ3eKhNDLYrF4mWoBP5AupTs8VjzGM0kIEqldXyCHRnJfU6ewSPZb="
+},
               hasStrictValidation: false,
-              responses: {
-                200: { status: "received" }
-              }
+              responseLabel: "Expected Response From Your Server",
+              responseExamples: [{ label: "Acknowledge", body: {
+  "webhookResponse": "success"
+} }]
             }
           ]
         },
@@ -385,76 +774,79 @@
               method: "POST",
               path: "/api/v1/payout/create",
               description: "Initiates a withdrawal/payout to a customer's designated bank account.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              endpointNotes: [
+                "The signature is an RSA signature of the canonical string of the request body (see Authentication & Signature). The timestamp must match the one used for the signature."
+              ],
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
-                { field: "amount", type: "float", req: true, desc: "Payout amount in THB", ex: "50.00" },
-                { field: "clientId", type: "string", req: true, desc: "The client's unique identifier", ex: "{{CLIENT_ID}}" },
-                { field: "merchantId", type: "string", req: true, desc: "The merchant's unique identifier", ex: "{{MERCHANT_ID}}" },
-                { field: "phone", type: "string", req: false, desc: "Customer phone number", ex: "" },
-                { field: "signature", type: "string", req: true, desc: "JWT signature derived from secret key", ex: "eyJhbGciOi..." },
-                { field: "timestamp", type: "integer", req: true, desc: "Must match timestamp used in signature", ex: "1767000966705" },
-                { field: "name", type: "string", req: true, desc: "Customer name", ex: "อนุษา พันพา" },
-                { field: "bankAccountNumber", type: "string", req: true, desc: "Customer bank account number", ex: "9777233470" },
-                { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "BBL" },
-                { field: "callbackUrl", type: "string", req: true, desc: "HTTPS callback URL for notification", ex: "https://test.callback.com" },
-                { field: "transactionId", type: "string", req: true, desc: "Unique transaction ID created by client", ex: "test1asdas234ssssstesds552tt2ssssssss6" },
+                { field: "clientId", type: "string", req: true, desc: "The unique identifier for the client initiating the payout", ex: "{{CLIENT_ID}}" },
+                { field: "merchantId", type: "string", req: true, desc: "The unique identifier for the merchant", ex: "{{MERCHANT_ID}}" },
+                { field: "transactionId", type: "string", req: true, desc: "A unique transaction ID generated by the client", ex: "POP0PTB01776723e7X1" },
+                { field: "bankAccountNumber", type: "string", req: true, desc: "The customer's bank account number to which the payout will be sent", ex: "6640193604" },
+                { field: "amount", type: "float/integer", req: true, desc: "The payout amount", ex: "1" },
+                { field: "bankName", type: "string", req: true, desc: "Bank short name (from List Bank API)", ex: "KTB" },
+                { field: "name", type: "string", req: false, desc: "The name of the customer or account holder", ex: "เฮง ร่ำรวย" },
+                { field: "phone", type: "string", req: false, desc: "The phone number of the customer", ex: "\"\"" },
+                { field: "callbackUrl", type: "string", req: true, desc: "The URL to receive the payout status updates", ex: "https://xxxx.com/callback" },
+                { field: "signature", type: "string", req: true, desc: "Base64 RSA signature (RSASSA-PKCS1-v1_5 / SHA-256) of the canonical string", ex: "HkR5tM9xLqZ2bWfE7pNv... (Base64)" },
+                { field: "timestamp", type: "integer", req: true, desc: "Must match the timestamp used in the signature (within 5 minutes of server time)", ex: "1728321993142" },
                 // Strict validation
-                { field: "bankAccountHolderName", type: "string", req: "Strict Only", desc: "User bank account holder name", ex: "Jonny Doe" },
-                { field: "lastDepositDate", type: "string", req: "Strict Only", desc: "Latest deposit date (ISO 8601)", ex: "2026-05-10" },
-                { field: "lastWithdrawalDate", type: "string", req: "Strict Only", desc: "Latest withdrawal date (ISO 8601)", ex: "2026-05-09" },
-                { field: "lastRegisterDate", type: "string", req: "Strict Only", desc: "Customer registration date (ISO 8601)", ex: "2026-03-25" },
-                { field: "totalDepositAmount", type: "integer", req: "Strict Only*", desc: "Total deposit THB. Required if totalTurnover omitted", ex: "100000" },
-                { field: "totalTurnover", type: "integer", req: "Strict Only*", desc: "Total turnover THB. Required if totalDepositAmount omitted", ex: "450000" },
-                { field: "platformUserId", type: "string", req: "Strict Only", desc: "Merchant player account ID", ex: "USR_100928" }
+                { field: "bankAccountHolderName", type: "string", req: "Strict Only", desc: "User's bank account holder name. Use the same name for both deposit and withdrawal under the same player account", ex: "John Doe" },
+                { field: "lastDepositDate", type: "string", req: "Strict Only", desc: "User's latest deposit date (ISO 8601)", ex: "2026-05-10" },
+                { field: "lastWithdrawalDate", type: "string", req: "Strict Only", desc: "User's latest withdrawal date (ISO 8601)", ex: "2026-05-09" },
+                { field: "lastRegisterDate", type: "string", req: "Strict Only", desc: "Actual date the user registered on the merchant platform (ISO 8601)", ex: "2026-01-15" },
+                { field: "totalDepositAmount", type: "integer", req: "Strict Only*", desc: "User's total deposit amount in THB. Minimum: 100000. Required if totalTurnover is not provided", ex: "100000" },
+                { field: "totalTurnover", type: "integer", req: "Strict Only*", desc: "User's total turnover in THB. Minimum: 300000. Required if totalDepositAmount is not provided", ex: "450000" },
+                { field: "platformUserId", type: "string", req: "Strict Only", desc: "Unique user ID from the merchant platform", ex: "USR_100928" }
               ],
               body: {
-                amount: 50.00,
-                clientId: "{{CLIENT_ID}}",
-                merchantId: "{{MERCHANT_ID}}",
-                phone: "",
-                signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudElkIjoiZ09SSXNRcUJKMyIsImNsaWVudElkIjoiS3ZzN3pFUXNzaSIsImlhdCI6MTc6NzAwMDk2NjcwNX0.CC614NS9srbSA7IYbBKCVGBOFzcxJcc7geKp3_KVHJ0",
-                timestamp: 1767000966705,
-                name: "อนุษา พันพา",
-                bankAccountHolderName: "Jonny Doe",
-                lastDepositDate: "2026-05-10",
-                lastWithdrawalDate: "2026-05-09",
-                lastRegisterDate: "2026-03-25",
-                totalDepositAmount: 100000,
-                totalTurnover: 450000,
-                platformUserId: "USR_100928",
-                bankAccountNumber: "9777233470",
-                bankName: "BBL",
-                callbackUrl: "https://test.callback.com",
-                transactionId: "test1asdas234ssssstesds552tt2ssssssss6"
-              },
+  "amount": 50.0,
+  "clientId": "{{CLIENT_ID}}",
+  "merchantId": "{{MERCHANT_ID}}",
+  "phone": "",
+  "signature": "SqCjF2vP8nKmBdEuXoI1wRtH7aL0YzWbGsNfTe9MpQhVjO3cDxA5rkULgZIyJ6mKsPbT4hRnWo7QzEuFXjN2vI8mAcBdLpGtOeY9hJsVfKwZ0xMrCqNaU5lHgDiRP3bTkWXoSEuJmFyLz6nQvOiH8pBdCGaN1RsK4jEfYwT2MVX7hqUlZPbgDoR9InKsEoATcJmFvH5XWqPzLNMuY8sRdCbO3kGwBIjepQfThVaUy1Z6rEKlSxJgXnOM=",
+  "timestamp": 1767000966705,
+  "name": "อนุษา พันพา",
+  "bankAccountHolderName": "Jonny Doe",
+  "lastDepositDate": "2026-05-10",
+  "lastWithdrawalDate": "2026-05-09",
+  "lastRegisterDate": "2026-03-25",
+  "totalDepositAmount": 100000,
+  "totalTurnover": 450000,
+  "platformUserId": "USR_100928",
+  "bankAccountNumber": "9777233470",
+  "bankName": "BBL",
+  "callbackUrl": "https://xxxx.com/callback",
+  "transactionId": "test1asdas234ssssstesds552tt2ssssssss6"
+},
               hasStrictValidation: true,
               strictValidationDetails: {
-                explanation: "Payout Strict Validation blocks payout attempts for accounts with high-risk behavior or unauthorized bank account changes.",
+                explanation: "Payout Strict Validation blocks payout attempts for accounts with high-risk behavior or unauthorized bank account changes. It is required only if the Strict Validation option is enabled for your merchant.",
                 rules: [
-                  { rule: "Account Holder Match", desc: "Bank Account Holder Name must match deposit name on record (e.g. Jonny Doe)." },
-                  { rule: "Same Day Registration Lockout", desc: "No payout allowed on the account creation date (lastRegisterDate)." },
-                  { rule: "Turnover Verification", desc: "Must provide valid totalTurnover (e.g. 450,000 THB) or totalDepositAmount (e.g. 100,000 THB) prior to payout release." }
+                  { rule: "Same-Day Registration Lock", desc: "Transactions are not allowed on the day a player registers. The system compares lastRegisterDate with the transaction date." },
+                  { rule: "Single Bank Account Enforce", desc: "One bank account per platformUserId for deposits and payouts. Only completed transactions are checked. Use one bankAccountHolderName for both deposits and withdrawals." },
+                  { rule: "Turnover Requirement", desc: "Player must meet totalTurnover of at least 300,000 THB, or totalDepositAmount of at least 100,000 THB." }
                 ],
                 validPayload: {
-                  amount: 50.00,
-                  clientId: "{{CLIENT_ID}}",
-                  merchantId: "{{MERCHANT_ID}}",
-                  phone: "",
-                  signature: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZXJjaGFudElkIjoiZ09SSXNRcUJKMyIsImNsaWVudElkIjoiS3ZzN3pFUXNzaSIsImlhdCI6MTc6NzAwMDk2NjcwNX0.CC614NS9srbSA7IYbBKCVGBOFzcxJcc7geKp3_KVHJ0",
-                  timestamp: 1767000966705,
-                  name: "อนุษา พันพา",
-                  bankAccountHolderName: "Jonny Doe",
-                  lastDepositDate: "2026-05-10",
-                  lastWithdrawalDate: "2026-05-09",
-                  lastRegisterDate: "2026-03-25",
-                  totalDepositAmount: 100000,
-                  totalTurnover: 450000,
-                  platformUserId: "USR_100928",
-                  bankAccountNumber: "9777233470",
-                  bankName: "BBL",
-                  callbackUrl: "https://test.callback.com",
-                  transactionId: "test1asdas234ssssstesds552tt2ssssssss6"
-                },
+  "amount": 50.0,
+  "clientId": "{{CLIENT_ID}}",
+  "merchantId": "{{MERCHANT_ID}}",
+  "phone": "",
+  "signature": "SqCjF2vP8nKmBdEuXoI1wRtH7aL0YzWbGsNfTe9MpQhVjO3cDxA5rkULgZIyJ6mKsPbT4hRnWo7QzEuFXjN2vI8mAcBdLpGtOeY9hJsVfKwZ0xMrCqNaU5lHgDiRP3bTkWXoSEuJmFyLz6nQvOiH8pBdCGaN1RsK4jEfYwT2MVX7hqUlZPbgDoR9InKsEoATcJmFvH5XWqPzLNMuY8sRdCbO3kGwBIjepQfThVaUy1Z6rEKlSxJgXnOM=",
+  "timestamp": 1767000966705,
+  "name": "อนุษา พันพา",
+  "bankAccountHolderName": "Jonny Doe",
+  "lastDepositDate": "2026-05-10",
+  "lastWithdrawalDate": "2026-05-09",
+  "lastRegisterDate": "2026-03-25",
+  "totalDepositAmount": 100000,
+  "totalTurnover": 450000,
+  "platformUserId": "USR_100928",
+  "bankAccountNumber": "9777233470",
+  "bankName": "BBL",
+  "callbackUrl": "https://xxxx.com/callback",
+  "transactionId": "test1asdas234ssssstesds552tt2ssssssss6"
+},
                 invalidPayload: {
                   amount: 50000.00,
                   clientId: "{{CLIENT_ID}}",
@@ -462,71 +854,294 @@
                   transactionId: "PO_2026_882",
                   bankAccountNumber: "1122334455",
                   bankName: "BBL",
-                  bankAccountHolderName: "Taylor Swift" // MISMATCHED NAME
+                  bankAccountHolderName: "Taylor Swift", // DIFFERENT FROM DEPOSIT NAME
+                  platformUserId: "USR_100928",
+                  lastRegisterDate: new Date().toISOString().slice(0, 10), // SAME DAY REGISTRATION!
+                  totalTurnover: 50000 // BELOW 300,000 MINIMUM
                 },
-                invalidReason: "Bank account holder name differs from the registered FTD account name."
+                invalidReason: "Fails Strict Rules: 1) Registration date matches the current transaction date (same-day block). 2) totalTurnover (50,000) is below the 300,000 minimum. 3) The account holder name differs from the one used on the player's deposits."
               },
-              responses: {
-                200: {
-                  status: "success",
-                  message: "Payout Initiated",
-                  data: {
-                    referenceId: "PO_REF_99812",
-                    status: "pending",
-                    amount: 50.00
-                  }
-                }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "message": "Create Success",
+  "data": {
+    "clientId": "nHUxQbHgEu",
+    "merchantId": "VOBM7qzaRH",
+    "referenceId": "qS4EDxSWCO",
+    "transactionId": "POP0PTB01776723e7X1",
+    "amount": 1,
+    "status": "pending",
+    "customerData": {
+      "bankAccountNumber": "6xxxxxxxx4",
+      "bankName": "KTB",
+      "name": "เฮง ร่ำรวย",
+      "phone": ""
+    },
+    "systemBankData": {
+      "bankAccountNumber": "1xxxxxxxxx9",
+      "bankName": "SCB",
+      "bankCode": "014",
+      "name": "ปิxxxx แxxxxxร์"
+    }
+  }
+} }]
             },
             {
               id: "list-payout",
               name: "List Payout Transactions",
               method: "GET",
               path: "/api/v1/payout",
-              description: "Lists payout records for a given date window.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              description: "Lists payout transactions for a given date range and merchant, with pagination. The sample response is shortened to two records.",
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
-                { field: "startDate", type: "string", req: true, ex: "2026-09-01" },
-                { field: "endDate", type: "string", req: true, ex: "2026-09-09" },
-                { field: "merchantId", type: "string", req: true, ex: "MERCH_882910" },
-                { field: "pageSize", type: "integer", req: false, ex: "20" },
-                { field: "pageIndex", type: "integer", req: false, ex: "1" }
+                { field: "startDate", type: "string (YYYY-MM-DD)", req: true, desc: "Start date of the transaction range", ex: "2024-10-07" },
+                { field: "endDate", type: "string (YYYY-MM-DD)", req: true, desc: "End date of the transaction range", ex: "2024-10-08" },
+                { field: "merchantId", type: "string", req: true, desc: "The unique ID of the merchant", ex: "{{MERCHANT_ID}}" },
+                { field: "pageSize", type: "integer", req: false, desc: "Number of transactions per page", ex: "20" },
+                { field: "pageIndex", type: "integer", req: false, desc: "The page number for pagination", ex: "1" }
               ],
               hasStrictValidation: false,
-              responses: {
-                200: { status: "success", data: [], total: 0 }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "data": [
+    {
+      "referenceId": "qS4EDxSWCO",
+      "logs": [
+        {
+          "status": "pending",
+          "timestamp": 1728321993142
+        },
+        {
+          "status": "processing",
+          "timestamp": 1728331815513
+        },
+        {
+          "status": "completed",
+          "timestamp": 1728331819650
+        }
+      ],
+      "clientId": "nHUxQbHgEu",
+      "clientName": "demo2",
+      "transactionId": "POP0PTB01776723e7X1",
+      "amount": 1,
+      "bankAccountNumber": "6640193604",
+      "bankName": "KTB",
+      "bankCode": "006",
+      "name": "เฮง ร่ำรวย",
+      "phone": "",
+      "callbackUrl": "https://xxxx.com/callback",
+      "ipAddress": "203.0.113.10",
+      "bankId": "nSSx7LL6X2",
+      "status": "completed",
+      "systemPromptpayNumber": "0955157457",
+      "systemBankAccountNumber": "1714436599",
+      "systemBankCode": "014",
+      "systemBankName": "SCB",
+      "systemBankAccountName": "ปิยรัฐ แก้วจันทร์",
+      "timestamp": 1728321993142,
+      "merchantId": "VOBM7qzaRH",
+      "merchantName": "demo2",
+      "createdAt": "2024-10-07T20:10:15.309Z",
+      "updatedAt": "2024-10-07T20:10:20.466Z",
+      "callbackResponse": {
+        "status": "error",
+        "message": "connect ECONNREFUSED 54.153.216.130:443"
+      },
+      "accountToName": "บจ. ท็อป ลูอี่",
+      "message": "โอนเรียบร้อย",
+      "processTime": 4,
+      "qrcode": "0046000600000101030140225202410085HxTHZUSiu7AEZ3DE5102TH9104E769"
+    },
+    {
+      "referenceId": "SSlqeKHt1n",
+      "logs": [
+        {
+          "status": "pending",
+          "timestamp": 1728296704752
+        },
+        {
+          "status": "processing",
+          "timestamp": 1728296705172
+        },
+        {
+          "status": "failed",
+          "timestamp": 1728296705861
+        }
+      ],
+      "clientId": "nHUxQbHgEu",
+      "clientName": "demo2",
+      "transactionId": "ltcu#5325#1728296704456",
+      "amount": 20,
+      "bankAccountNumber": "2712224633",
+      "bankName": "BBL",
+      "bankCode": "002",
+      "name": "",
+      "phone": "",
+      "callbackUrl": "https://xxxx.com/callback",
+      "ipAddress": "203.0.113.10",
+      "bankId": "nSSx7LL6X2",
+      "status": "failed",
+      "systemPromptpayNumber": "0955157457",
+      "systemBankAccountNumber": "1714436599",
+      "systemBankCode": "014",
+      "systemBankName": "SCB",
+      "systemBankAccountName": "ปิยรัฐ แก้วจันทร์",
+      "timestamp": 1728296704752,
+      "merchantId": "VOBM7qzaRH",
+      "merchantName": "demo2",
+      "createdAt": "2024-10-07T10:25:04.917Z",
+      "updatedAt": "2024-10-07T10:25:06.228Z",
+      "callbackResponse": {
+        "callbackResponse": {
+          "success": true
+        }
+      },
+      "completedCallbackResponse": null,
+      "message": "เลขที่บัญชีรับเงินไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+    }
+  ],
+  "total": 10
+} }]
             },
             {
               id: "get-payout-by-ref",
               name: "Get Payout Transaction By Ref ID",
               method: "GET",
               path: "/api/v1/payout/:referenceId",
-              description: "Retrieves details of a specific payout using reference ID.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
-              params: [{ field: "referenceId", type: "string", req: true, ex: "PO_REF_99812" }],
+              description: "Retrieves the details of a specific payout transaction using the reference ID returned when the payout was created.",
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
+              params: [{ field: "referenceId", type: "string (Path Param)", req: true, desc: "The unique ID received after successfully creating a payout transaction", ex: "qS4EDxSWCO" }],
               hasStrictValidation: false,
-              responses: {
-                200: { status: "success", data: { referenceId: "PO_REF_99812", status: "completed" } }
-              }
+              responseExamples: [
+                { label: "Standard", body: {
+  "status": "success",
+  "data": {
+    "referenceId": "qS4EDxSWCO",
+    "logs": [
+      {
+        "status": "pending",
+        "timestamp": 1728321993142
+      },
+      {
+        "status": "processing",
+        "timestamp": 1728331815513
+      },
+      {
+        "status": "completed",
+        "timestamp": 1728331819650
+      }
+    ],
+    "clientId": "nHUxQbHgEu",
+    "clientName": "demo2",
+    "transactionId": "POP0PTB01776723e7X1",
+    "amount": 1,
+    "bankAccountNumber": "6640193604",
+    "bankName": "KTB",
+    "bankCode": "006",
+    "name": "เฮง ร่ำรวย",
+    "phone": "",
+    "callbackUrl": "https://xxxx.com/callback",
+    "bankId": "nSSx7LL6X2",
+    "status": "completed",
+    "systemBankCode": "014",
+    "timestamp": 1728321993142,
+    "merchantId": "VOBM7qzaRH",
+    "merchantName": "demo2",
+    "createdAt": "2024-10-07T20:10:15.309Z",
+    "updatedAt": "2024-10-07T20:10:20.466Z",
+    "callbackResponse": {
+      "status": "error",
+      "message": "connect ECONNREFUSED 54.153.216.130:443"
+    },
+    "accountToName": "บจ. ท็อป ลูอี่",
+    "message": "โอนเรียบร้อย",
+    "processTime": 4,
+    "qrcode": "0046000600000101030140225202410085HxTHZUSiu7AEZ3DE5102TH9104E769"
+  }
+} },
+                { label: "Strict Validation", body: {
+  "status": "success",
+  "data": {
+    "referenceId": "GmSOdO2CBs",
+    "logs": [
+      {
+        "status": "pending",
+        "timestamp": 1767000966705
+      },
+      {
+        "status": "completed",
+        "timestamp": 1778819418791
+      },
+      {
+        "status": "completed",
+        "timestamp": 1778819422872
+      }
+    ],
+    "clientId": "CLT9xP2LmQ",
+    "clientName": "alphaClient88",
+    "transactionId": "TransfertesT111111111",
+    "amount": 50,
+    "bankAccountNumber": "123456789220",
+    "bankName": "SCB",
+    "bankCode": "014",
+    "name": "SIAM DIGITAL GROUP CO., LTD.",
+    "phone": "",
+    "callbackUrl": "https://xxxx.com/callback",
+    "bankId": "v4uAAwEnuh",
+    "status": "completed",
+    "timestamp": 1767000966705,
+    "bankAccountHolderName": "John Doe",
+    "lastDepositDate": "2026-01-01",
+    "lastWithdrawalDate": "2026-01-01",
+    "lastRegisterDate": "2026-01-01",
+    "totalTurnover": 450000.56,
+    "platformUserId": "USR_100928",
+    "currentMerchantBalance": 145.364,
+    "merchantId": "MRC7KtYp91",
+    "merchantName": "alphaMerchantTH",
+    "createdAt": "2026-05-15T04:29:43.409Z",
+    "updatedAt": "2026-05-15T04:30:23.332Z",
+    "clientBalanceId": "CBL84nXzQ2",
+    "processTime": 126,
+    "message": "manual_approve",
+    "callbackResponse": {
+      "status": "error",
+      "message": "connect ECONNREFUSED 54.153.216.130:443"
+    }
+  }
+} }
+              ]
             },
             {
               id: "payout-webhook",
               name: "Payout Webhook Callback",
               method: "POST",
-              path: "https://sample.enigmapay.com/payout-callback",
-              description: "Triggered when payout status switches to processing, failed, rejected, or completed.",
+              path: "{{client_payout_webhook_url}}",
+              description: "The webhook callback is triggered to the callback URL specified in the create payout request when the transaction reaches the processing, failed, rejected or completed status.",
+              endpointNotes: [
+                "hash is an AES-encrypted value where the transactionId is hashed using a key created by concatenating your API_KEY and SECRET_KEY.",
+                "Your server must respond with {\"webhookResponse\": \"success\"} upon receiving the callback."
+              ],
               headers: [{ key: "Content-Type", value: "application/json" }],
-              params: [],
+              params: [
+                { field: "referenceId", type: "string", req: true, desc: "The unique reference ID for the payout", ex: "{{referenceId}}" },
+                { field: "transactionId", type: "string", req: true, desc: "The unique transaction ID", ex: "{{transactionId}}" },
+                { field: "status", type: "string", req: true, desc: "pending, processing, failed, rejected or completed", ex: "completed" },
+                { field: "message", type: "string", req: true, desc: "Status message", ex: "Some Message" },
+                { field: "hash", type: "string", req: true, desc: "AES hash of the transactionId (key = API_KEY + SECRET_KEY)", ex: "xxxxxxx" }
+              ],
               body: {
-                referenceId: "PO_REF_99812",
-                transactionId: "PO_ENG_2026_002",
-                status: "completed",
-                message: "Payout successful",
-                hash: "AES_ENCRYPTED_TRANSACTION_HASH"
-              },
+  "referenceId": "{{referrencId}}",
+  "transactionId": "{{transactionId}}",
+  "status": "completed",
+  "message": "Some Message",
+  "hash": "xxxxxxx"
+},
               hasStrictValidation: false,
-              responses: { 200: { status: "received" } }
+              responseLabel: "Expected Response From Your Server",
+              responseExamples: [{ label: "Acknowledge", body: {
+  "webhookResponse": "success"
+} }]
             }
           ]
         },
@@ -539,24 +1154,28 @@
               name: "Get Merchant Balance",
               method: "GET",
               path: "/api/v1/merchant/balance",
-              description: "Queries current merchant balances across operateBalance, parkingBalance, and freezeBalance.",
-              headers: [{ key: "x-api-key", value: "ENG_KEY_8f9a2b4c6d", required: true }],
+              description: "Retrieves the current balance details of the specified merchant, including the breakdown of active, parked, and frozen balances.",
+              endpointNotes: [
+                "balance = operateBalance + parkingBalance + freezeBalance.",
+                "operateBalance: balance in primary accounts used for ongoing transactions. parkingBalance: balance in secondary or less frequently used accounts. freezeBalance: balance in accounts that are temporarily frozen or blocked."
+              ],
+              headers: [{ key: "x-api-key", value: "{{API_KEY}}", required: true }],
               params: [
-                { field: "merchantId", type: "string", req: true, ex: "MERCH_882910" }
+                { field: "merchantId", type: "string", req: true, desc: "The unique ID of the merchant", ex: "{{MERCHANT_ID}}" }
               ],
               hasStrictValidation: false,
-              responses: {
-                200: {
-                  status: "success",
-                  data: {
-                    merchantId: "MERCH_882910",
-                    balance: 1545000.50,
-                    operateBalance: 1200000.00,
-                    parkingBalance: 345000.50,
-                    freezeBalance: 0.00
-                  }
-                }
-              }
+              responseExamples: [{ label: "200 OK", body: {
+  "status": "success",
+  "data": {
+    "merchantId": "VOBM7qzaRH",
+    "name": "demo2",
+    "balance": 428.84,
+    "operateBalance": 247.45999999999998,
+    "parkingBalance": 0,
+    "freezeBalance": 181.38,
+    "updatedAt": "2024-10-07T11:21:38.596Z"
+  }
+} }]
             }
           ]
         }
@@ -589,7 +1208,8 @@
         const results = [];
         API_SCHEMA.folders.forEach(f => {
           f.endpoints.forEach(e => {
-            if (e.name.toLowerCase().includes(q) || e.path.toLowerCase().includes(q) || e.description.toLowerCase().includes(q)) {
+            const inParams = (e.params || []).some(p => p.field.toLowerCase().includes(q));
+            if (e.name.toLowerCase().includes(q) || e.path.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || inParams) {
               results.push({ ...e, folder: f.name });
             }
           });
@@ -602,26 +1222,18 @@
           {/* TOP NAVBAR */}
           <header className="h-16 border-b border-borderDark bg-bgSecondary/90 backdrop-blur sticky top-0 z-40 px-4 md:px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden text-textSecondary hover:text-white text-xl"
-              >
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-textSecondary hover:text-white text-xl">
                 <i className="fa-solid fa-bars"></i>
               </button>
-              
               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab("overview")}>
-             <img 
-  src="https://raw.githubusercontent.com/enigmapay/api-document/main/enigmapay-logo.png" 
-  alt="ENIGMAPAY Logo" 
-  className="h-9 w-auto object-contain" 
-/>
+                <img src="https://raw.githubusercontent.com/enigmapay/api-document/main/enigmapay-logo.png" alt="ENIGMAPAY Logo" className="h-9 w-auto object-contain" />
               </div>
             </div>
 
             {/* SEARCH BAR */}
             <div className="relative flex-1 max-w-md mx-4 hidden sm:block">
               <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-textSecondary text-sm"></i>
-              <input 
+              <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -634,12 +1246,9 @@
                     <div className="p-4 text-center text-textSecondary text-sm">No matching documentation endpoints found</div>
                   ) : (
                     searchResults.map(res => (
-                      <div 
+                      <div
                         key={res.id}
-                        onClick={() => {
-                          setActiveTab(res.id);
-                          setSearchQuery("");
-                        }}
+                        onClick={() => { setActiveTab(res.id); setSearchQuery(""); }}
                         className="p-3 hover:bg-cardBgHover rounded-lg cursor-pointer flex items-center justify-between border-b border-borderDark/40 last:border-0"
                       >
                         <div>
@@ -655,7 +1264,6 @@
               )}
             </div>
 
-            {/* TOP RIGHT NAV LINKS */}
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cardBg border border-borderDark text-xs font-mono text-emerald-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -672,23 +1280,17 @@
               ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
               <div className="p-4 overflow-y-auto flex-1 space-y-6">
-                {/* GENERAL SECTIONS */}
                 <div>
-                  <div className="text-[11px] font-bold text-textSecondary tracking-wider uppercase mb-2 px-2">
-                    Getting Started
-                  </div>
+                  <div className="text-[11px] font-bold text-textSecondary tracking-wider uppercase mb-2 px-2">Getting Started</div>
                   <div className="space-y-1">
                     {API_SCHEMA.sections.map(sec => (
                       <button
                         key={sec.id}
-                        onClick={() => {
-                          setActiveTab(sec.id);
-                          setMobileMenuOpen(false);
-                        }}
+                        onClick={() => { setActiveTab(sec.id); setMobileMenuOpen(false); }}
                         className={`
                           w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all text-left
-                          ${activeTab === sec.id 
-                            ? 'bg-primaryPurple/15 text-primaryPurple border-l-2 border-primaryPurple font-semibold' 
+                          ${activeTab === sec.id
+                            ? 'bg-primaryPurple/15 text-primaryPurple border-l-2 border-primaryPurple font-semibold'
                             : 'text-textSecondary hover:text-white hover:bg-cardBg'}
                         `}
                       >
@@ -699,13 +1301,11 @@
                   </div>
                 </div>
 
-                {/* API REFERENCE CATEGORIES */}
                 <div>
                   <div className="text-[11px] font-bold text-textSecondary tracking-wider uppercase mb-2 px-2 flex items-center justify-between">
                     <span>API Reference</span>
                     <span className="text-[10px] bg-cardBg px-1.5 py-0.5 rounded text-textSecondary border border-borderDark">REST</span>
                   </div>
-                  
                   <div className="space-y-4">
                     {API_SCHEMA.folders.map(folder => (
                       <div key={folder.name} className="space-y-1">
@@ -717,14 +1317,11 @@
                           {folder.endpoints.map(ep => (
                             <button
                               key={ep.id}
-                              onClick={() => {
-                                setActiveTab(ep.id);
-                                setMobileMenuOpen(false);
-                              }}
+                              onClick={() => { setActiveTab(ep.id); setMobileMenuOpen(false); }}
                               className={`
                                 w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all text-left
-                                ${activeTab === ep.id 
-                                  ? 'bg-cardBgElevated text-white font-semibold text-primaryPurple border border-primaryPurple/30' 
+                                ${activeTab === ep.id
+                                  ? 'bg-cardBgElevated text-primaryPurple font-semibold border border-primaryPurple/30'
                                   : 'text-textSecondary hover:text-white hover:bg-cardBg'}
                               `}
                             >
@@ -739,10 +1336,8 @@
                 </div>
               </div>
 
-              {/* FOOTER INFO */}
               <div className="p-3 border-t border-borderDark bg-cardBg/40 text-[11px] text-textSecondary flex items-center justify-between">
                 <span>ENIGMAPAY API Document</span>
-             
               </div>
             </aside>
 
@@ -750,12 +1345,13 @@
             <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-bgDark">
               <div className="max-w-5xl mx-auto space-y-10">
                 {activeTab === "overview" && <OverviewPage onNavigate={(tab) => setActiveTab(tab)} />}
-                {activeTab === "getting-started" && <GettingStartedPage />}
+                {activeTab === "getting-started" && <GettingStartedPage onNavigate={(tab) => setActiveTab(tab)} />}
                 {activeTab === "authentication" && <AuthenticationPage selectedLang={selectedCodeLang} setSelectedLang={setSelectedCodeLang} />}
                 {activeTab === "strict-validation-guide" && <StrictValidationGuidePage />}
                 {activeEndpoint && (
-                  <EndpointDetailPage 
-                    endpoint={activeEndpoint} 
+                  <EndpointDetailPage
+                    key={activeEndpoint.id}
+                    endpoint={activeEndpoint}
                     isStrict={!!strictValidationMode[activeEndpoint.id]}
                     onToggleStrict={() => toggleEndpointStrict(activeEndpoint.id)}
                   />
@@ -795,10 +1391,7 @@
         setTimeout(() => setCopied(false), 2000);
       };
       return (
-        <button 
-          onClick={handleCopy}
-          className="text-textSecondary hover:text-white text-xs px-2 py-1 rounded bg-cardBg border border-borderDark transition-colors flex items-center gap-1.5"
-        >
+        <button onClick={handleCopy} className="text-textSecondary hover:text-white text-xs px-2 py-1 rounded bg-cardBg border border-borderDark transition-colors flex items-center gap-1.5">
           <i className={`fa-regular ${copied ? 'fa-check text-emerald-400' : 'fa-copy'}`}></i>
           <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
@@ -812,11 +1405,15 @@
             <span>{language.toUpperCase()}</span>
             <CopyButton text={code} />
           </div>
-          <pre className="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed">
+          <pre className="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed max-h-[32rem]">
             <code>{code}</code>
           </pre>
         </div>
       );
+    }
+
+    function Inline({ children }) {
+      return <code className="text-primaryPurple font-mono">{children}</code>;
     }
 
     // --- OVERVIEW PAGE ---
@@ -825,65 +1422,42 @@
         <div className="space-y-8 animate-fadeIn">
           <div className="border-b border-borderDark pb-6">
             <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">ENIGMAPAY REST API</h1>
-            <p className="text-textSecondary text-base leading-relaxed max-w-3xl">
-              Automated high-throughput payment gateway offering real-time deposit and payout APIs. Features automated matching engine for PromptPay and Thai Bank transfers.
-            </p>
+            <p className="text-textSecondary text-base leading-relaxed max-w-3xl">{API_SCHEMA.info.description}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-cardBg border border-borderDark p-5 rounded-2xl space-y-2 hover:border-primaryPurple/50 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg">
-                <i className="fa-solid fa-bolt"></i>
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg"><i className="fa-solid fa-bolt"></i></div>
               <h3 className="font-bold text-white text-base">Automatic Matching</h3>
-              <p className="text-xs text-textSecondary leading-normal">
-                Real-time automated transaction reconciliation for bank transfers and QR codes without human interaction.
-              </p>
+              <p className="text-xs text-textSecondary leading-normal">Real-time automated transaction reconciliation for bank transfers and QR codes without human interaction.</p>
             </div>
-
             <div className="bg-cardBg border border-borderDark p-5 rounded-2xl space-y-2 hover:border-primaryPurple/50 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg">
-                <i className="fa-solid fa-shield-halved"></i>
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg"><i className="fa-solid fa-shield-halved"></i></div>
               <h3 className="font-bold text-white text-base">Strict Validation Option</h3>
-              <p className="text-xs text-textSecondary leading-normal">
-                Built-in FTD fraud protection, account name matching, turnover checking, and same-day registration lockout.
-              </p>
+              <p className="text-xs text-textSecondary leading-normal">Built-in FTD fraud protection, single bank account enforcement, turnover checking, and same-day registration lockout.</p>
             </div>
-
             <div className="bg-cardBg border border-borderDark p-5 rounded-2xl space-y-2 hover:border-primaryPurple/50 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg">
-                <i className="fa-solid fa-lock"></i>
-              </div>
-              <h3 className="font-bold text-white text-base">HMAC-SHA256 Security</h3>
-              <p className="text-xs text-textSecondary leading-normal">
-                JWT signatures with single-use timestamps safeguard every financial payload against tampering.
-              </p>
+              <div className="w-10 h-10 rounded-xl bg-primaryPurple/10 text-primaryPurple flex items-center justify-center text-lg"><i className="fa-solid fa-lock"></i></div>
+              <h3 className="font-bold text-white text-base">RSA-SHA256 Signatures</h3>
+              <p className="text-xs text-textSecondary leading-normal">Every request body is signed with your RSA private key (RS256) and checked against a 5-minute timestamp window to prevent tampering and replay.</p>
             </div>
           </div>
 
-          {/* BASE URL CARD */}
           <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <i className="fa-solid fa-globe text-primaryPurple"></i>
-              Environment Endpoint
-            </h2>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2"><i className="fa-solid fa-globe text-primaryPurple"></i>Environment Endpoint</h2>
             <div className="bg-bgDark p-4 rounded-xl border border-borderDark flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-xs">
               <span className="text-textSecondary">Base Production URL:</span>
-              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                https://sample.enigmapay.com/api/v1
-              </span>
+              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">{API_SCHEMA.info.baseUrl}</span>
             </div>
           </div>
 
-          {/* SUPPORTED BANKS GRID */}
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <i className="fa-solid fa-building-columns text-primaryPurple"></i>
               Supported Banks ({BANK_LIST.length})
             </h2>
             <p className="text-xs text-textSecondary">
-              Use the <code className="text-primaryPurple font-mono">code</code> or <code className="text-primaryPurple font-mono">name</code> parameter values below when sending deposit or payout requests.
+              Always send a <Inline>bankName</Inline> value that is listed below. Use the short name shown in bold (e.g. <Inline>SCB</Inline>) as the <Inline>bankName</Inline> parameter in deposit and payout requests.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {BANK_LIST.map(bank => (
@@ -892,25 +1466,18 @@
                   <div className="truncate">
                     <div className="text-xs font-bold text-white font-mono">{bank.name} <span className="text-[10px] text-textSecondary font-normal">({bank.code})</span></div>
                     <div className="text-[10px] text-textSecondary truncate">{bank.name_en}</div>
+                    <div className="text-[10px] text-textSecondary truncate">{bank.name_th}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* QUICK LINKS */}
           <div className="pt-4 flex flex-wrap gap-3">
-            <button 
-              onClick={() => onNavigate("getting-started")}
-              className="bg-primaryPurple hover:bg-secondaryPurple text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all purple-glow flex items-center gap-2"
-            >
-              <span>Get Started Guide</span>
-              <i className="fa-solid fa-arrow-right"></i>
+            <button onClick={() => onNavigate("getting-started")} className="bg-primaryPurple hover:bg-secondaryPurple text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all purple-glow flex items-center gap-2">
+              <span>Get Started Guide</span><i className="fa-solid fa-arrow-right"></i>
             </button>
-            <button 
-              onClick={() => onNavigate("create-deposit")}
-              className="bg-cardBg hover:bg-cardBgHover border border-borderDark text-textPrimary px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
-            >
+            <button onClick={() => onNavigate("create-deposit")} className="bg-cardBg hover:bg-cardBgHover border border-borderDark text-textPrimary px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
               <span>View Create Deposit Endpoint</span>
             </button>
           </div>
@@ -919,46 +1486,51 @@
     }
 
     // --- GETTING STARTED PAGE ---
-    function GettingStartedPage() {
+    function GettingStartedPage({ onNavigate }) {
+      const Step = ({ n, title, children }) => (
+        <div className="bg-cardBg border border-borderDark rounded-2xl p-6 relative pl-12">
+          <div className="absolute left-4 top-6 w-6 h-6 rounded-full bg-primaryPurple text-white text-xs font-bold flex items-center justify-center">{n}</div>
+          <h3 className="font-bold text-white text-base mb-1">{title}</h3>
+          {children}
+        </div>
+      );
       return (
         <div className="space-y-8 animate-fadeIn">
           <div className="border-b border-borderDark pb-6">
             <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Getting Started</h1>
-            <p className="text-textSecondary text-sm">
-              Follow these integration steps to quickly connect your system to ENIGMAPAY.
-            </p>
+            <p className="text-textSecondary text-sm">Follow these integration steps to quickly connect your system to ENIGMAPAY.</p>
           </div>
 
           <div className="space-y-6">
-            <div className="bg-cardBg border border-borderDark rounded-2xl p-6 relative pl-12">
-              <div className="absolute left-4 top-6 w-6 h-6 rounded-full bg-primaryPurple text-white text-xs font-bold flex items-center justify-center">1</div>
-              <h3 className="font-bold text-white text-base mb-1">Obtain API Credentials</h3>
-              <p className="text-xs text-textSecondary mb-3">
-                You will receive your production credentials securely via email:
-              </p>
-              <ul className="text-xs text-textSecondary space-y-1 font-mono bg-bgDark p-3 rounded-lg border border-borderDark">
-                <li>• <strong className="text-white">API Key (x-api-key):</strong> Header identifier</li>
-                <li>• <strong className="text-white">Secret Key:</strong> Used for HMAC signature generation</li>
-                <li>• <strong className="text-white">Merchant ID:</strong> Business entity identifier</li>
-                <li>• <strong className="text-white">Client ID:</strong> Client transaction initiator ID</li>
+            <Step n="1" title="Obtain API Credentials">
+              <p className="text-xs text-textSecondary mb-3">Your credentials are available in your <strong className="text-white">Client Back Office</strong>. Your Client BO login will be shared with you via email.</p>
+              <ul className="text-xs text-textSecondary space-y-1.5 font-mono bg-bgDark p-3 rounded-lg border border-borderDark">
+                <li>• <strong className="text-white">API Key (x-api-key):</strong> unique identifier used to authenticate your API requests</li>
+                <li>• <strong className="text-white">Secret Key:</strong> used to verify webhook callback authenticity (no longer used to sign API requests)</li>
+                <li>• <strong className="text-white">Merchant ID:</strong> identifier assigned to your business for API transactions</li>
+                <li>• <strong className="text-white">Client ID:</strong> identifier for the client initiating transactions</li>
+                <li>• <strong className="text-white">RSA Private Key:</strong> your private key (PEM format) used to sign API requests. Keep it strictly private</li>
+                <li>• <strong className="text-white">RSA Public Key:</strong> your public key (PEM format) registered with ENIGMAPAY for signature verification</li>
               </ul>
-            </div>
+            </Step>
 
-            <div className="bg-cardBg border border-borderDark rounded-2xl p-6 relative pl-12">
-              <div className="absolute left-4 top-6 w-6 h-6 rounded-full bg-primaryPurple text-white text-xs font-bold flex items-center justify-center">2</div>
-              <h3 className="font-bold text-white text-base mb-1">Generate Request Signatures</h3>
+            <Step n="2" title="Create a Signature">
               <p className="text-xs text-textSecondary">
-                All transactional requests require a generated signature using the HS256 algorithm combining merchantId, clientId, and current timestamp.
+                Before making requests, create an RSA signature (RSASSA-PKCS1-v1_5 / SHA-256) of the canonical string of the request body using your <Inline>RSA_PRIVATE_KEY</Inline>, then Base64-encode it into the <Inline>signature</Inline> field.{" "}
+                <button onClick={() => onNavigate("authentication")} className="text-primaryPurple hover:underline font-semibold">See Authentication & Signature</button>
               </p>
-            </div>
+            </Step>
 
-            <div className="bg-cardBg border border-borderDark rounded-2xl p-6 relative pl-12">
-              <div className="absolute left-4 top-6 w-6 h-6 rounded-full bg-primaryPurple text-white text-xs font-bold flex items-center justify-center">3</div>
-              <h3 className="font-bold text-white text-base mb-1">Handle Webhook Callbacks</h3>
+            <Step n="3" title="Send Requests">
+              <p className="text-xs text-textSecondary">Every request must include the <Inline>"x-api-key": YOUR_API_KEY</Inline> header and the required parameters.</p>
+            </Step>
+
+            <Step n="4" title="Handle Webhook Callbacks">
               <p className="text-xs text-textSecondary">
-                Configure an HTTPS endpoint in your system to receive transaction state updates (<code className="text-primaryPurple font-mono">completed</code> or <code className="text-primaryPurple font-mono">expired</code>).
+                Configure an HTTPS endpoint to receive transaction updates: deposits notify on <Inline>completed</Inline> or <Inline>expired</Inline>; payouts notify on <Inline>processing</Inline>, <Inline>failed</Inline>, <Inline>rejected</Inline> or <Inline>completed</Inline>.
+                Respond with <Inline>{'{"webhookResponse": "success"}'}</Inline>. The <Inline>hash</Inline> field is the AES-encrypted <Inline>transactionId</Inline>, keyed with <Inline>API_KEY</Inline> + <Inline>SECRET_KEY</Inline>.
               </p>
-            </div>
+            </Step>
           </div>
         </div>
       );
@@ -966,103 +1538,67 @@
 
     // --- AUTHENTICATION & SIGNATURE PAGE ---
     function AuthenticationPage({ selectedLang, setSelectedLang }) {
-      const codeExamples = {
-        javascript: `const jwt = require("jsonwebtoken");
-const SECRET_KEY = "ENG_SEC_9x8v7c6b5a4m";
-const TIMESTAMP = Date.now();
-
-const PAYLOAD = {
-  "merchantId": "MERCH_882910",
-  "clientId": "CLI_994012",
-  "iat": TIMESTAMP
-};
-
-const signature = jwt.sign(PAYLOAD, SECRET_KEY);`,
-        java: `import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
-public class SignatureGenerator {
-    public static String createSignature(String merchantId, String clientId, String secretKey) {
-        long timestamp = System.currentTimeMillis() / 1000L;
-        return Jwts.builder()
-                .setSubject("Signature")
-                .claim("merchantId", merchantId)
-                .claim("clientId", clientId)
-                .claim("iat", timestamp)
-                .signWith(SignatureAlgorithm.HS256, secretKey.getBytes())
-                .compact();
-    }
-}`,
-        php: `<?php
-require 'vendor/autoload.php';
-use \\Firebase\\JWT\\JWT;
-
-$merchantId = "MERCH_882910";
-$clientId = "CLI_994012";
-$secretKey = "ENG_SEC_9x8v7c6b5a4m";
-$timestamp = time();
-
-$payload = array(
-    "merchantId" => $merchantId,
-    "clientId" => $clientId,
-    "iat" => $timestamp
-);
-
-$jwt = JWT::encode($payload, $secretKey, 'HS256');
-echo $jwt;
-?>`,
-        csharp: `using System;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-
-public class SignatureGenerator {
-    public static string CreateSignature(string merchantId, string clientId, string secretKey) {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-        
-        var payload = new JwtPayload {
-            { "merchantId", merchantId },
-            { "clientId", clientId },
-            { "iat", timestamp }
-        };
-        
-        var token = new JwtSecurityToken(new JwtHeader(credentials), payload);
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-}`
-      };
+      const langs = [
+        { id: 'javascript', label: 'JavaScript (Node.js)' },
+        { id: 'java', label: 'Java' },
+        { id: 'php', label: 'PHP' },
+        { id: 'csharp', label: 'C#' }
+      ];
+      const getCode = (id) => (document.getElementById('code-' + id) || {}).textContent || '';
 
       return (
         <div className="space-y-8 animate-fadeIn">
           <div className="border-b border-borderDark pb-6">
-            <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Authentication & JWT Signature</h1>
-            <p className="text-textSecondary text-sm">
-              Learn how to generate secure, single-use JWT signatures using HS256 algorithm.
+            <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Authentication & RSA Signature</h1>
+            <p className="text-textSecondary text-sm max-w-3xl">
+              To authenticate requests you must generate a secure <strong className="text-white">RSA signature</strong> using <strong className="text-white">RSASSA-PKCS1-v1_5 / SHA-256</strong> (RS256). The signature proves the request was sent by an authorized client and has not been tampered with. It is derived from the canonical string of the request body, signed with your RSA Private Key.
             </p>
           </div>
 
           <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <i className="fa-solid fa-code text-primaryPurple"></i>
-              Language Implementations
-            </h2>
+            <h2 className="text-base font-bold text-white flex items-center gap-2"><i className="fa-solid fa-list-ol text-primaryPurple"></i>General Steps</h2>
+            <ol className="text-xs text-textSecondary space-y-3 list-decimal pl-5">
+              <li>
+                <strong className="text-white">Build the canonical string:</strong> take all body fields <em>except</em> <Inline>signature</Inline>, sort the keys alphabetically, and join them as <Inline>key=value&key=value</Inline>.
+                <div className="mt-2 text-[11px]">Example: given <Inline>{'{ "merchantId": "ABC", "clientId": "XYZ", "timestamp": 1767000966705 }'}</Inline> the canonical string is:</div>
+                <CodeBlock code={"clientId=XYZ&merchantId=ABC&timestamp=1767000966705"} language="text" />
+              </li>
+              <li><strong className="text-white">Sign the canonical string:</strong> sign it with your RSA Private Key using RSASSA-PKCS1-v1_5 / SHA-256.</li>
+              <li><strong className="text-white">Base64-encode the result:</strong> the binary signature bytes must be Base64-encoded before being placed in the <Inline>signature</Inline> field.</li>
+            </ol>
+          </div>
 
+          <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2"><i className="fa-solid fa-code text-primaryPurple"></i>Language Implementations</h2>
             <div className="flex gap-2 border-b border-borderDark pb-2 overflow-x-auto">
-              {['javascript', 'java', 'php', 'csharp'].map(lang => (
+              {langs.map(l => (
                 <button
-                  key={lang}
-                  onClick={() => setSelectedLang(lang)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono capitalize transition-all ${
-                    selectedLang === lang ? 'bg-primaryPurple text-white font-bold' : 'text-textSecondary hover:text-white bg-bgDark'
-                  }`}
+                  key={l.id}
+                  onClick={() => setSelectedLang(l.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-all ${selectedLang === l.id ? 'bg-primaryPurple text-white font-bold' : 'text-textSecondary hover:text-white bg-bgDark'}`}
                 >
-                  {lang}
+                  {l.label}
                 </button>
               ))}
             </div>
+            <CodeBlock code={getCode(selectedLang)} language={selectedLang} />
+          </div>
 
-            <CodeBlock code={codeExamples[selectedLang]} language={selectedLang} />
+          <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-3">
+            <h2 className="text-base font-bold text-white flex items-center gap-2"><i className="fa-solid fa-paper-plane text-primaryPurple"></i>How to Use the Signature</h2>
+            <p className="text-xs text-textSecondary">Include the signature in every API request as part of the request body:</p>
+            <CodeBlock code={JSON.stringify({ clientId: "<YOUR_CLIENT_ID>", merchantId: "<YOUR_MERCHANT_ID>", signature: "<BASE64_RSA_SIGNATURE>", timestamp: "<TIMESTAMP>" }, null, 2)} language="json" />
+          </div>
+
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2"><i className="fa-solid fa-circle-info"></i>Important Considerations</h3>
+            <ul className="space-y-2 text-xs text-amber-200/90 leading-relaxed">
+              <li><strong className="text-amber-400">Algorithm:</strong> RSASSA-PKCS1-v1_5 / SHA-256 (RS256) for all integrations.</li>
+              <li><strong className="text-amber-400">Key pair:</strong> register your RSA Public Key with ENIGMAPAY. Keep your RSA Private Key private and secure; never share it.</li>
+              <li><strong className="text-amber-400">Canonical string:</strong> sort all body fields alphabetically by key (excluding <code>signature</code>), then join as <code>key=value&key=value</code>. JSON field order in the payload does not matter; only the canonical string order does.</li>
+              <li><strong className="text-amber-400">Timestamp tolerance:</strong> the <code>timestamp</code> must be within 5 minutes of the server time to prevent replay attacks. Reuse the same <code>timestamp</code> value in the request body that you used when building the signature.</li>
+              <li><strong className="text-amber-400">Single use:</strong> the signature must be single-use; the timestamp changes each time you generate a request.</li>
+            </ul>
           </div>
         </div>
       );
@@ -1074,8 +1610,8 @@ public class SignatureGenerator {
         <div className="space-y-8 animate-fadeIn">
           <div className="border-b border-borderDark pb-6">
             <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Strict Validation Guide</h1>
-            <p className="text-textSecondary text-sm">
-              Comprehensive reference on ENIGMAPAY optional strict merchant validation policies designed to eliminate First-Time Deposit (FTD) exploits and unauthorized payouts.
+            <p className="text-textSecondary text-sm max-w-3xl">
+              Reference on the optional ENIGMAPAY strict merchant validation policies designed to prevent First-Time Deposit (FTD) exploits and unauthorized payouts. The strict fields on Create Deposit and Create Payout are required only if the Strict Validation option is enabled for your merchant.
             </p>
           </div>
 
@@ -1083,25 +1619,48 @@ public class SignatureGenerator {
             <div className="bg-cardBg border border-borderDark p-5 rounded-xl space-y-2">
               <div className="text-rose-400 text-lg font-bold">Rule 1</div>
               <h3 className="text-white font-bold text-sm">Same-Day Register Block</h3>
-              <p className="text-xs text-textSecondary">
-                Players cannot execute deposits or payouts on the exact same date as their account registration (<code className="text-primaryPurple font-mono">lastRegisterDate</code>).
-              </p>
+              <p className="text-xs text-textSecondary">Transactions are not allowed on the same day a player registers. The system compares <Inline>lastRegisterDate</Inline> with the transaction date.</p>
             </div>
-
             <div className="bg-cardBg border border-borderDark p-5 rounded-xl space-y-2">
               <div className="text-amber-400 text-lg font-bold">Rule 2</div>
               <h3 className="text-white font-bold text-sm">Single Bank Account Lock</h3>
-              <p className="text-xs text-textSecondary">
-                Each player (<code className="text-primaryPurple font-mono">platformUserId</code>) is bound strictly to one bank account number and bank name across all completed transactions.
-              </p>
+              <p className="text-xs text-textSecondary">Each player (<Inline>platformUserId</Inline>) may use only one bank account for deposits and payouts. Different <Inline>bankAccountNumber</Inline> or <Inline>bankName</Inline> values are detected across <strong className="text-white">completed</strong> transactions only.</p>
             </div>
-
             <div className="bg-cardBg border border-borderDark p-5 rounded-xl space-y-2">
               <div className="text-emerald-400 text-lg font-bold">Rule 3</div>
-              <h3 className="text-white font-bold text-sm">Turnover & Deposit Metric Requirement</h3>
-              <p className="text-xs text-textSecondary">
-                Transactions must specify at least one cumulative metric: <code className="text-primaryPurple font-mono">totalTurnover</code> (e.g. 450,000 THB) or <code className="text-primaryPurple font-mono">totalDepositAmount</code> (e.g. 100,000 THB).
-              </p>
+              <h3 className="text-white font-bold text-sm">Turnover & Deposit Requirement</h3>
+              <p className="text-xs text-textSecondary">Provide <Inline>totalTurnover</Inline> of at least 300,000 THB, or <Inline>totalDepositAmount</Inline> of at least 100,000 THB. One of the two is required.</p>
+            </div>
+          </div>
+
+          <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-3">
+            <h2 className="text-base font-bold text-white">Strict-only fields</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-borderDark text-textSecondary font-mono uppercase text-[10px]">
+                    <th className="py-2.5 px-3">Field</th><th className="py-2.5 px-3">Deposit</th><th className="py-2.5 px-3">Payout</th><th className="py-2.5 px-3">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-borderDark/60">
+                  {[
+                    ["bankAccountHolderName", "Yes", "Yes", "Use only one holder name for deposits and withdrawals under the same player account"],
+                    ["lastDepositDate", "Yes", "Yes", "ISO 8601"],
+                    ["lastWithdrawalDate", "-", "Yes", "ISO 8601"],
+                    ["lastRegisterDate", "Yes", "Yes", "ISO 8601, actual registration date on the merchant platform"],
+                    ["totalDepositAmount", "Yes*", "Yes*", "THB, minimum 100000. *Required if totalTurnover is omitted"],
+                    ["totalTurnover", "Yes*", "Yes*", "THB, minimum 300000. *Required if totalDepositAmount is omitted"],
+                    ["platformUserId", "Yes", "Yes", "Unique user ID from the merchant platform"]
+                  ].map((r, i) => (
+                    <tr key={i}>
+                      <td className="py-2.5 px-3 font-mono font-bold text-primaryPurple">{r[0]}</td>
+                      <td className="py-2.5 px-3 text-white">{r[1]}</td>
+                      <td className="py-2.5 px-3 text-white">{r[2]}</td>
+                      <td className="py-2.5 px-3 text-textSecondary">{r[3]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1110,86 +1669,87 @@ public class SignatureGenerator {
 
     // --- ENDPOINT DETAIL PAGE WITH STRICT VALIDATION TOGGLE ---
     function EndpointDetailPage({ endpoint, isStrict, onToggleStrict }) {
+      const [exIdx, setExIdx] = useState(0);
+      const examples = endpoint.responseExamples || [];
+      const example = examples[exIdx] || examples[0];
+
+      const isStrictField = (p) => p.req === "Strict Only" || p.req === "Strict Only*";
+      const strictKeys = new Set((endpoint.params || []).filter(isStrictField).map(p => p.field));
+      const visibleBody = endpoint.body
+        ? Object.fromEntries(Object.entries(endpoint.body).filter(([k]) => isStrict || !strictKeys.has(k)))
+        : null;
+      const visibleParams = (endpoint.params || []).filter(p => isStrict || !isStrictField(p));
+
       return (
         <div className="space-y-8 animate-fadeIn">
           {/* HEADER AREA */}
           <div className="border-b border-borderDark pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <MethodBadge method={endpoint.method} />
-                <span className="font-mono text-xs text-textSecondary bg-cardBg px-3 py-1 rounded-lg border border-borderDark">
-                  {endpoint.path}
-                </span>
+                <span className="font-mono text-xs text-textSecondary bg-cardBg px-3 py-1 rounded-lg border border-borderDark break-all">{endpoint.path}</span>
               </div>
               <h1 className="text-2xl font-extrabold text-white tracking-tight">{endpoint.name}</h1>
-              <p className="text-xs text-textSecondary mt-1">{endpoint.description}</p>
+              <p className="text-xs text-textSecondary mt-1 max-w-3xl">{endpoint.description}</p>
             </div>
 
-            {/* STRICT VALIDATION TOGGLE */}
             {endpoint.hasStrictValidation && (
               <div className="bg-cardBg border border-borderDark p-3 rounded-2xl flex items-center gap-4 shrink-0 purple-glow-sm">
                 <div>
-                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <i className="fa-solid fa-shield-halved text-primaryPurple"></i>
-                    Strict Validation
-                  </div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5"><i className="fa-solid fa-shield-halved text-primaryPurple"></i>Strict Validation</div>
                   <div className="text-[10px] text-textSecondary">FTD & Multi-account checks</div>
                 </div>
-
-                <button
-                  onClick={onToggleStrict}
-                  className={`
-                    w-12 h-6 rounded-full p-1 transition-colors relative flex items-center
-                    ${isStrict ? 'bg-primaryPurple' : 'bg-borderDark'}
-                  `}
-                >
-                  <div className={`
-                    w-4 h-4 rounded-full bg-white transition-transform transform
-                    ${isStrict ? 'translate-x-6' : 'translate-x-0'}
-                  `}></div>
+                <button onClick={onToggleStrict} className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${isStrict ? 'bg-primaryPurple' : 'bg-borderDark'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform transform ${isStrict ? 'translate-x-6' : 'translate-x-0'}`}></div>
                 </button>
               </div>
             )}
           </div>
 
-          {/* ENDPOINT NOTES / IMPORTANT REMINDERS */}
-          {endpoint.endpointNotes && endpoint.endpointNotes.length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
-              <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                <i className="fa-solid fa-circle-info"></i>
-                Important Integration Notes
-              </h3>
-              <div className="space-y-2">
-                {endpoint.endpointNotes.map((note, index) => (
-                  <div key={index} className="text-xs text-amber-200/90 leading-relaxed flex items-start gap-2">
-                    <span className="font-bold text-amber-400 shrink-0">•</span>
-                    <span>{note}</span>
+          {/* HEADERS */}
+          {endpoint.headers && endpoint.headers.length > 0 && (
+            <div className="bg-cardBg border border-borderDark rounded-2xl p-5 space-y-2">
+              <h2 className="text-xs font-bold text-white uppercase tracking-wider">Headers</h2>
+              <div className="space-y-1.5">
+                {endpoint.headers.map((h, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-3 text-xs font-mono">
+                    <span className="text-primaryPurple font-bold">{h.key}</span>
+                    <span className="text-textSecondary">{h.value}</span>
+                    {h.required && <span className="text-[10px] text-emerald-400 font-bold">REQUIRED</span>}
+                    {h.desc && <span className="text-textSecondary font-sans">{h.desc}</span>}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* STRICT VALIDATION EXPANDABLE SECTION */}
-          {endpoint.hasStrictValidation && isStrict && (
+          {/* ENDPOINT NOTES */}
+          {endpoint.endpointNotes && endpoint.endpointNotes.length > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
+              <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2"><i className="fa-solid fa-circle-info"></i>Important Integration Notes</h3>
+              <div className="space-y-2">
+                {endpoint.endpointNotes.map((note, index) => (
+                  <div key={index} className="text-xs text-amber-200/90 leading-relaxed flex items-start gap-2">
+                    <span className="font-bold text-amber-400 shrink-0">•</span><span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STRICT VALIDATION SECTION */}
+          {endpoint.hasStrictValidation && isStrict && endpoint.strictValidationDetails && (
             <div className="bg-cardBg border-2 border-primaryPurple/50 rounded-2xl p-6 space-y-6 purple-glow animate-fadeIn">
               <div className="flex items-center justify-between border-b border-borderDark pb-4">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-primaryPurple animate-ping"></span>
-                  <h2 className="text-base font-bold text-white uppercase tracking-wider text-xs">
-                    Strict Validation Enabled
-                  </h2>
+                  <h2 className="font-bold text-white uppercase tracking-wider text-xs">Strict Validation Enabled</h2>
                 </div>
-                <span className="text-[10px] bg-primaryPurple/20 text-primaryPurple px-2 py-0.5 rounded font-mono font-bold">
-                  ACTIVE
-                </span>
+                <span className="text-[10px] bg-primaryPurple/20 text-primaryPurple px-2 py-0.5 rounded font-mono font-bold">ACTIVE</span>
               </div>
 
-              <p className="text-xs text-textSecondary leading-relaxed">
-                {endpoint.strictValidationDetails.explanation}
-              </p>
+              <p className="text-xs text-textSecondary leading-relaxed">{endpoint.strictValidationDetails.explanation}</p>
 
-              {/* RULES LIST */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider">Validation Rules</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1202,21 +1762,13 @@ public class SignatureGenerator {
                 </div>
               </div>
 
-              {/* VALID VS INVALID COMPARISON */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1.5">
-                    <i className="fa-solid fa-circle-check"></i>
-                    EXAMPLE VALID PAYLOAD
-                  </div>
+                  <div className="text-xs font-bold text-emerald-400 mb-2 flex items-center gap-1.5"><i className="fa-solid fa-circle-check"></i>EXAMPLE VALID PAYLOAD</div>
                   <CodeBlock code={JSON.stringify(endpoint.strictValidationDetails.validPayload, null, 2)} language="json" />
                 </div>
-
                 <div>
-                  <div className="text-xs font-bold text-rose-400 mb-2 flex items-center gap-1.5">
-                    <i className="fa-solid fa-circle-xmark"></i>
-                    EXAMPLE INVALID PAYLOAD
-                  </div>
+                  <div className="text-xs font-bold text-rose-400 mb-2 flex items-center gap-1.5"><i className="fa-solid fa-circle-xmark"></i>EXAMPLE INVALID PAYLOAD</div>
                   <CodeBlock code={JSON.stringify(endpoint.strictValidationDetails.invalidPayload, null, 2)} language="json" />
                   <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-[11px] mt-2">
                     <strong>Rejection Reason:</strong> {endpoint.strictValidationDetails.invalidReason}
@@ -1227,29 +1779,21 @@ public class SignatureGenerator {
           )}
 
           {/* PARAMETERS TABLE */}
-          <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center justify-between">
-              <span>Parameters & Payload Fields</span>
-              <span className="text-xs text-textSecondary font-normal">
-                {isStrict ? "Showing Strict Fields" : "Standard View"}
-              </span>
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-borderDark text-textSecondary font-mono uppercase text-[10px]">
-                    <th className="py-2.5 px-3">Field</th>
-                    <th className="py-2.5 px-3">Type</th>
-                    <th className="py-2.5 px-3">Required</th>
-                    <th className="py-2.5 px-3">Description</th>
-                    <th className="py-2.5 px-3">Example</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-borderDark/60">
-                  {endpoint.params
-                    .filter(p => isStrict || p.req !== "Strict Only" && p.req !== "Strict Only*")
-                    .map((p, i) => (
+          {visibleParams.length > 0 && (
+            <div className="bg-cardBg border border-borderDark rounded-2xl p-6 space-y-4">
+              <h2 className="text-base font-bold text-white flex items-center justify-between">
+                <span>Parameters & Payload Fields</span>
+                {endpoint.hasStrictValidation && <span className="text-xs text-textSecondary font-normal">{isStrict ? "Showing Strict Fields" : "Standard View"}</span>}
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-borderDark text-textSecondary font-mono uppercase text-[10px]">
+                      <th className="py-2.5 px-3">Field</th><th className="py-2.5 px-3">Type</th><th className="py-2.5 px-3">Required</th><th className="py-2.5 px-3">Description</th><th className="py-2.5 px-3">Example</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-borderDark/60">
+                    {visibleParams.map((p, i) => (
                       <tr key={i} className="hover:bg-cardBgHover/50 transition-colors">
                         <td className="py-2.5 px-3 font-mono font-bold text-primaryPurple">{p.field}</td>
                         <td className="py-2.5 px-3 font-mono text-textSecondary">{p.type}</td>
@@ -1257,47 +1801,44 @@ public class SignatureGenerator {
                           {p.req === true && <span className="text-emerald-400 font-bold">YES</span>}
                           {p.req === false && <span className="text-textSecondary">NO</span>}
                           {p.req === "Conditional" && <span className="text-amber-400 font-bold">CONDITIONAL</span>}
-                          {(p.req === "Strict Only" || p.req === "Strict Only*") && (
-                            <span className="text-primaryPurple font-bold bg-primaryPurple/10 px-2 py-0.5 rounded border border-primaryPurple/30">STRICT</span>
-                          )}
+                          {isStrictField(p) && <span className="text-primaryPurple font-bold bg-primaryPurple/10 px-2 py-0.5 rounded border border-primaryPurple/30">STRICT{p.req === "Strict Only*" ? "*" : ""}</span>}
                         </td>
                         <td className="py-2.5 px-3 text-textSecondary">{p.desc || "-"}</td>
-                        <td className="py-2.5 px-3 font-mono text-white">{p.ex || "-"}</td>
+                        <td className="py-2.5 px-3 font-mono text-white break-all">{p.ex || "-"}</td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
+              {isStrict && <p className="text-[11px] text-textSecondary">* Provide at least one of <Inline>totalDepositAmount</Inline> or <Inline>totalTurnover</Inline>.</p>}
             </div>
-          </div>
+          )}
 
-          {/* CODE REQUEST / RESPONSE PREVIEW */}
+          {/* REQUEST / RESPONSE */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h2 className="text-sm font-bold text-white mb-2">Request Body Payload</h2>
-              <CodeBlock 
-                code={endpoint.body ? JSON.stringify(endpoint.body, null, 2) : "// No Request Body Required"} 
-                language="json" 
-              />
+              <h2 className="text-sm font-bold text-white mb-2">{endpoint.method === "GET" ? "Request Body" : "Request Body Payload"}</h2>
+              <CodeBlock code={visibleBody ? JSON.stringify(visibleBody, null, 2) : "// No Request Body Required"} language="json" />
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-sm font-bold text-white mb-2">Sample 200 OK Response</h2>
-              <CodeBlock 
-                code={JSON.stringify(endpoint.responses[200], null, 2)} 
-                language="json" 
-              />
+              <h2 className="text-sm font-bold text-white mb-2">{endpoint.responseLabel || "Sample Response"}</h2>
+              {examples.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {examples.map((ex, i) => (
+                    <button key={i} onClick={() => setExIdx(i)} className={`px-3 py-1 rounded-lg text-[11px] font-mono transition-all ${exIdx === i ? 'bg-primaryPurple text-white font-bold' : 'text-textSecondary hover:text-white bg-cardBg border border-borderDark'}`}>
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {example && <CodeBlock code={JSON.stringify(example.body, null, 2)} language="json" />}
 
-              {/* RESPONSE NOTES */}
               {endpoint.responseNotes && endpoint.responseNotes.length > 0 && (
                 <div className="bg-primaryPurple/10 border border-primaryPurple/30 rounded-xl p-4 space-y-2">
-                  <div className="text-xs font-bold text-lightPurple flex items-center gap-1.5">
-                    <i className="fa-solid fa-lightbulb"></i>
-                    Response Handling Notes
-                  </div>
+                  <div className="text-xs font-bold text-lightPurple flex items-center gap-1.5"><i className="fa-solid fa-lightbulb"></i>Response Handling Notes</div>
                   {endpoint.responseNotes.map((note, index) => (
-                    <p key={index} className="text-xs text-textSecondary leading-relaxed">
-                      {note}
-                    </p>
+                    <p key={index} className="text-xs text-textSecondary leading-relaxed">{note}</p>
                   ))}
                 </div>
               )}
